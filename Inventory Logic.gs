@@ -2,7 +2,7 @@
  * -----------------------------------------------------------------------------
  * ORCHID INVENTORY - PROVISIONING & DATA INTEGRITY (InventoryLogic.gs)
  * -----------------------------------------------------------------------------
- * Updated: 2026-05-09
+ * Updated: 2026-05-10
  * Purpose: Manages two-stage orchid entry and database synchronization.
  * -----------------------------------------------------------------------------
  */
@@ -46,12 +46,13 @@ function provisionNewOrchid() {
 
 /**
  * 🌸 STAGE 2: FINALIZE & LINK LEDGER
- * Creates the individual sheet from Template and maps data to specific cells.
+ * Creates the individual sheet from Template and updates the Maintenance Log.
  */
 function finalizeNewOrchid() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const inv = ss.getSheetByName(INVENTORY_SHEET);
   const template = ss.getSheetByName(TEMPLATE_SHEET);
+  const maintenanceLog = ss.getSheetByName("Maintenance Log");
   const ui = SpreadsheetApp.getUi();
   
   const activeRow = inv.getActiveCell().getRow();
@@ -77,18 +78,15 @@ function finalizeNewOrchid() {
   newSheet.showSheet();
 
   // 2. Map Inventory Data to Template Cells
-  // Botanical Info Section
   newSheet.getRange("B2").setValue(data[2]);  // Genus (Col C)
   newSheet.getRange("B3").setValue(data[5]);  // Species / Hybrid (Col F)
   newSheet.getRange("B4").setValue(data[6]);  // Alliance (Col G)
   newSheet.getRange("B5").setValue(data[1]);  // Orchid Name (Col B)
   newSheet.getRange("B6").setValue(data[7]);  // Native Range (Col H)
   
-  // Status and Maintenance
   newSheet.getRange("D5").setValue(data[10]); // Bloom Status (Col K)
   newSheet.getRange("D10").setValue(data[21]); // Next Repot Due (Col V)
 
-  // Care Profile Section
   newSheet.getRange("B11").setValue(data[14]); // Light Needs (Col O)
   newSheet.getRange("B12").setValue(data[16]); // Watering Needs (Col Q)
   newSheet.getRange("B13").setValue(data[17]); // Humidity (Col R)
@@ -101,7 +99,17 @@ function finalizeNewOrchid() {
   const gidLink = `#gid=${sheetId}`;
   inv.getRange(activeRow, 1).setFormula(`=HYPERLINK("${gidLink}", "${orchidId}")`);
 
-  ui.alert(`Success! Ledger created for ${orchidName} (ID: ${orchidId}).`);
+  // 4. Update Maintenance Log
+  if (maintenanceLog) {
+    const nextLogRow = maintenanceLog.getLastRow() + 1;
+    // Add ID to Column A
+    maintenanceLog.getRange(nextLogRow, 1).setValue(orchidId);
+    // Add Name to Column B and format as Italic
+    const nameCell = maintenanceLog.getRange(nextLogRow, 2);
+    nameCell.setValue(orchidName).setFontStyle("italic");
+  }
+
+  ui.alert(`Success! Ledger and Maintenance Log entry created for ${orchidName} (ID: ${orchidId}).`);
 }
 
 /**
@@ -123,18 +131,15 @@ function runSystemHealthCheck() {
     const id = data[i][0]; // Column A: ID
     const name = data[i][1]; // Column B: Name
     
-    // Skip hidden (archived) rows
     if (inv.isRowHiddenByUser(row)) continue;
     if (!id || !name) continue;
 
-    // Check for Duplicate IDs
     if (seenIDs.has(id)) {
       log.push(`Row ${row}: Duplicate ID ${id}`);
     } else {
       seenIDs.add(id);
     }
 
-    // Verify individual sheet existence
     const sheet = ss.getSheetByName(String(id));
     if (!sheet) {
       log.push(`ID ${id}: Missing individual sheet`);
@@ -142,8 +147,6 @@ function runSystemHealthCheck() {
       log.push(`ID ${id}: Sheet is hidden but orchid is active`);
     }
 
-    // NEW: Verify Frequency format (e.g. "12 months")
-    // Assuming Frequency is in Column U (Index 20)
     const freqRaw = data[i][20]; 
     if (freqRaw && !parseFrequencyToMonths(freqRaw)) {
       log.push(`ID ${id}: Invalid frequency format "${freqRaw}"`);
