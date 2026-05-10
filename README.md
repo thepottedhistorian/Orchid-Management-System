@@ -33,8 +33,11 @@ By integrating modern environmental sensor data with historical nomenclature, th
 ## 🌿 Scholarly Intent
 The data collected by this system directly informs the research for **The Satyrion Chronicles**, exploring the intersection of medieval botanical folklore and modern orchid care. 
 
----
----
-*“As the bee tends the hive, so the steward tends the scroll.”* 
-**© 2026 The Potted Historian. All Rights Reserved.** 
+
+#### *“As the bee tends the hive, so the steward tends the scroll.”* 
+
+
+
+**© 2026 The Potted Historian. All Rights Reserved.**
+
 *This code is provided for educational and archival purposes. Unauthorized redistribution or commercial use is prohibited.*
