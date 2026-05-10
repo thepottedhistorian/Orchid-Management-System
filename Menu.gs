@@ -2,22 +2,26 @@
  * -----------------------------------------------------------------------------
  * ORCHID MANAGEMENT SYSTEM - CONSOLIDATED MENU (Menu.gs)
  * -----------------------------------------------------------------------------
- * Version: 5.1.0
- * Updated: 2026-05-09
- * * CHANGELOG:
- * - ADDED: Navigation Sidebar (Sidebar.html) for inventory-focused management.
- * - ADDED: Auto-open trigger in onOpen to keep Sidebar persistent.
- * - ADDED: Sheet visibility utilities (hideActiveSheet / showAllHiddenSheets).
- * - UPDATED: Removed research-heavy links to focus on Active Inventory.
+ * Version: 5.1.2
+ * Updated: 2026-05-10
+ * Project: The Satyrion Chronicles / Orchid Tracker
+ * * CHANGE LOG:
+ * - Sanitized all external URLs using ScriptProperties for GitHub security.
+ * - Integrated automatic Sidebar launch on document open.
+ * - Added visibility utilities for managing a large collection of ID sheets.
  * -----------------------------------------------------------------------------
  */
 
+/**
+ * Standard trigger that builds the menu and launches the sidebar.
+ */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
   ui.createMenu("🌸 Orchid Tools")
     // Navigation & Layout
     .addItem("🧭 Open Navigation Sidebar", "showSidebar")
+    .addItem("🌱 Open Keiki Workbook", "openKeikiWorkbookLink")
     .addSeparator()
 
     // STAGE 1 & 2: Provisioning Workflow
@@ -106,7 +110,44 @@ function setActiveSheet(sheetName) {
 }
 
 /**
- * Hides the currently focused sheet.
+ * Opens the Keiki Workbook Link (called from Menu)
+ * Sanitized for GitHub using ScriptProperties.
+ */
+function openKeikiWorkbookLink() {
+  const props = PropertiesService.getScriptProperties();
+  const url = props.getProperty('KEIKI_WORKBOOK_URL');
+  
+  if (!url) {
+    SpreadsheetApp.getUi().alert("Error: Keiki Workbook URL not found in Script Properties. Please add it to Project Settings.");
+    return;
+  }
+
+  const html = HtmlService.createHtmlOutput(
+    '<html><script>' +
+    'var win = window.open("' + url + '", "_blank");' +
+    'if(win){ google.script.host.close(); }' +
+    'else { alert("Pop-up blocked! Please allow pop-ups for this sheet."); }' +
+    '</script></html>'
+  ).setWidth(10).setHeight(10);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, "Opening Keiki Workbook...");
+}
+
+/**
+ * Helper for Sidebar to get the sanitized URL.
+ */
+function getKeikiUrl() {
+  return PropertiesService.getScriptProperties().getProperty('KEIKI_WORKBOOK_URL');
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * VISIBILITY UTILITIES
+ * -----------------------------------------------------------------------------
+ */
+
+/**
+ * Hides the currently focused sheet to keep the tab bar clean.
  */
 function hideActiveSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -117,12 +158,12 @@ function hideActiveSheet() {
   if (visibleSheets.length > 1) {
     sheet.hideSheet();
   } else {
-    SpreadsheetApp.getUi().alert("Cannot hide the only visible sheet.");
+    SpreadsheetApp.getUi().alert("Digital Steward Alert: Cannot hide the only visible sheet.");
   }
 }
 
 /**
- * Reveals all previously hidden sheets in the workbook.
+ * Reveals all previously hidden sheets (ID ledgers) in the workbook.
  */
 function showAllHiddenSheets() {
   const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();

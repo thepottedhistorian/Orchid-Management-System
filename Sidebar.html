@@ -15,6 +15,16 @@
       }
       button:hover { background-color: #e8f5e8; border-color: #4caf50; }
       
+      /* New Sprout Style for Keiki Button */
+      .keiki-btn { 
+        background-color: #e8f5e8; 
+        border: 1px solid #a5d6a7; 
+        font-weight: bold; 
+        color: #2e7d32;
+        text-align: center;
+      }
+      .keiki-btn:hover { background-color: #c8e6c9; border-color: #2e7d32; }
+
       /* Search Input Container */
       .search-box { display: flex; gap: 5px; margin-top: 10px; padding: 5px; background: #eee; border-radius: 4px; }
       input[type="text"] { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; }
@@ -32,6 +42,7 @@
     <div class="group">
       <h3>🌸 Active Inventory</h3>
       <button onclick="nav('Inventory')">Inventory Dashboard</button>
+      <button class="keiki-btn" onclick="openKeiki()">🌱 Open Keiki Workbook</button>
       
       <div class="search-box">
         <input type="text" id="sheetSearch" placeholder="Jump to Sheet #..." 
@@ -58,6 +69,22 @@
     </div>
 
     <script>
+/**
+ * Opens the Keiki Workbook in a new browser tab
+ * Fetches the sanitized URL from the server first.
+ */
+function openKeiki() {
+  google.script.run
+    .withSuccessHandler(function(url) {
+      if (url) {
+        window.open(url, "_blank");
+      } else {
+        alert("Keiki URL not configured.");
+      }
+    })
+    .getKeikiUrl();
+}
+
       /**
        * Primary navigation for named tabs
        */
