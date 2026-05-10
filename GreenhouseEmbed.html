@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
+    
+    <style>
+      /* I. CONTAINER STYLING */
+      :root { --accent: #58a6ff; } /* Defined for the loading spinner */
+      
+      body {
+        background-color: #0d1117;
+        color: #ffffff;
+        font-family: 'Alice', serif;
+        margin: 0;
+        padding: 10px;
+        overflow: hidden;
+      }
+      .dashboard-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      
+ /* II. TYPOGRAPHY & LAYOUT */
+      h2 {
+        text-align: center;
+        color: #58a6ff;
+        margin: 0 0 10px 0;
+        font-size: 1.2em;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 8px;
+      }
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 8px 0;
+        font-size: 1em;
+      }
+
+      /* TARGETS THE LABELS (Specimens, Orchids Making, etc.) */
+      .stat-row span:first-child { 
+        color: #94a3b8; 
+      }
+
+      /* TARGETS THE VALUES (Numbers/Dates) */
+      .value { color: #aff5b4; font-weight: normal; }
+      
+      /* III. PROGRESS BAR STYLING */
+      .progress-container {
+        background: #30363d;
+        border-radius: 10px;
+        height: 8px;
+        width: 100%;
+        margin: 4px 0 12px 0;
+        overflow: hidden;
+      }
+      .progress-bar {
+        background: #1f6feb;
+        height: 100%;
+        transition: width 1s ease-in-out;
+      }
+
+      /* Research Target Footer Styling */
+      .research-label {
+        display: block;          /* Forces the span onto a new line */
+        text-align: left;        /* Aligns text to the left margin */
+        font-size: 12px;         /* Slightly smaller to indicate it's a footnote */
+        color: #8b949e;          /* Muted grey to differentiate from the main values */
+        margin-top: 5px;         /* Adds a small gap directly under the progress bar */
+        font-style: italic;      /* Professional "footnote" look */
+      }
+
+      /* IV. LOADING OVERLAY STYLING */
+      #loading-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #0d1117; display: flex; flex-direction: column;
+        align-items: center; justify-content: flex-start; padding-top: 40px; z-index: 9999;
+      }
+      #loading-header {
+        font-size: 20px;
+        color: var(--accent);
+        margin-bottom: 30px;
+      }
+      .spinner { 
+        width: 30px; height: 30px; 
+        border: 3px solid #30363d; border-top: 3px solid var(--accent); 
+        border-radius: 50%; animation: spin 1s linear infinite; 
+      }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+
+    <div id="loading-overlay">
+      <div id="loading-header">Greenhouse Status</div>
+      <div class="spinner"></div>
+      <p id="load-phrase" style="margin-top: 15px; color: var(--accent); font-size: 14px;"></p>
+    </div>
+
+    <div class="dashboard-card">
+      <h2>Greenhouse Status</h2>
+      <div id="stats">Connecting to Workbook...</div>
+    </div>
+
+    <script>
+/**
+       * V. LOADING LOGIC
+       */
+      const phrases = ["Gathering greenhouse vitals...", "Mist in progress: Hydrating the dashboard...", "Rooting through the inventory...", "Daydreaming about orchids..."];
+      let pIdx = 0;
+
+      // Set initial phrase immediately
+      document.getElementById('load-phrase').innerText = phrases[0];
+      pIdx = 1;
+
+      // CYCLE TIME: Each phrase stays for 2 seconds (2000ms)
+      const phraseInterval = setInterval(() => {
+        const el = document.getElementById('load-phrase');
+        if(el) {
+          el.innerText = phrases[pIdx];
+          pIdx = (pIdx + 1) % phrases.length;
+        }
+      }, 2000); 
+
+      /**
+       * VI. DATA HANDLER
+       */
+      function updateDashboard(data) {
+        // We moved clearInterval inside the timeout below to keep the text moving
+        
+        let html = `
+          <div class="stat-row"><span>Specimens in Residence:</span> <span class="value">${data.total}</span></div>
+          <div class="stat-row"><span>Orchids Making a Scene:</span> <span class="value">🌸 ${data.bloom}</span></div>
+          <div class="stat-row"><span>Date of Last Saturation:</span> <span class="value">${data.lastWater || '---'}</span></div>
+          
+          <hr style="border: 0; border-top: 1px solid #30363d; margin: 15px 0;">
+          
+          <div class="stat-row"><span>Breadcrumbs Found in Archives:</span> <span class="value">${data.researchPct}%</span></div>
+          <div class="progress-container"><div class="progress-bar" style="width: ${data.researchPct}%"></div></div>
+          
+          <div class="stat-row"><span>Hours of Labor in the Digital & Physical Greenhouse:</span> <span class="value">${data.totalHours} hrs</span></div>
+          <div class="progress-container">
+            <div class="progress-bar" style="width: ${Math.min((data.totalHours/300)*100, 100)}%; background: #3fb950;"></div>
+          </div>
+          <span class="research-label">*Annual Target: 300 hrs</span>
+        `;
+        document.getElementById('stats').innerHTML = html;
+
+        // TOTAL LOAD TIME: 8 seconds (8000ms)
+        // This gives enough time for 2 seconds x 4 phrases = 8 seconds total.
+        setTimeout(() => {
+          clearInterval(phraseInterval);
+          document.getElementById('loading-overlay').style.display = 'none';
+        }, 8000); 
+      }
+
+      // Initialize
+      google.script.run.withSuccessHandler(updateDashboard).getDashboardData();
+    </script>
+  </body>
+</html>
