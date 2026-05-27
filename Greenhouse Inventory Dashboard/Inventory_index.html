@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+<style>
+    /* ===========================================================================
+       I. GLOBAL THEME & BASE STYLES
+       =========================================================================== */
+    :root { 
+      --bg: #0f172a; 
+      --card: #1e293b; 
+      --accent: #38bdf8; 
+      --bloom-text: #fbcfe8; 
+    }
+
+    body { 
+      font-family: 'Segoe UI', sans-serif; 
+      background: var(--bg); 
+      color: #f1f5f9; 
+      padding: 20px; 
+      margin: 0; 
+      box-sizing: border-box; 
+      overflow-x: hidden; 
+    }
+
+    /* ===========================================================================
+       II. LOADING SCREEN & SPINNER
+       =========================================================================== */
+    #loading-overlay { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: #0f172a; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: flex-start; 
+      padding-top: 100px; 
+      z-index: 9999; 
+    }
+
+    #loading-header { 
+      font-size: 28px; 
+      font-weight: 600; 
+      color: var(--accent); 
+      margin-bottom: 60px; 
+    }
+
+    .spinner { 
+      width: 40px; 
+      height: 40px; 
+      border: 4px solid #1e293b; 
+      border-top: 4px solid var(--accent); 
+      border-radius: 50%; 
+      animation: spin 1s linear infinite; 
+    }
+
+    @keyframes spin { 
+      0% { transform: rotate(0deg); } 
+      100% { transform: rotate(360deg); } 
+    }
+
+    /* ===========================================================================
+       III. MISSION BOX & NAVIGATION BUTTONS
+       =========================================================================== */
+    .mission-box { 
+      background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); 
+      border-radius: 12px; 
+      border-left: 4px solid var(--accent); 
+      margin-bottom: 25px; 
+      padding: 30px; 
+    }
+
+    .mission-box h1 { 
+      margin: 0 0 15px 0; 
+      font-size: 22px; 
+      color: var(--accent); 
+      text-transform: uppercase; 
+      letter-spacing: 2px; 
+    }
+
+    .mission-box p { 
+      margin: 0; 
+      font-size: 15px; 
+      line-height: 1.8; 
+      color: #cbd5e1; 
+    }
+
+    .button-group { 
+      display: flex; 
+      gap: 12px; 
+      margin-bottom: 25px; 
+    }
+
+    .nav-btn { 
+      background: var(--card); 
+      color: #f1f5f9; 
+      border: 1px solid #475569; 
+      padding: 12px 20px; 
+      border-radius: 8px; 
+      font-size: 12px; 
+      font-weight: 600; 
+      text-transform: uppercase; 
+      cursor: pointer; 
+      text-decoration: none; 
+    }
+
+    /* ===========================================================================
+       IV. STATS GRID & DASHBOARD CARDS
+       =========================================================================== */
+    .stats-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
+      gap: 15px; 
+      margin-bottom: 25px; 
+    }
+
+    .split-card { 
+      background: var(--card); 
+      border-radius: 12px; 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      border-bottom: 4px solid #334155; 
+      min-height: 180px; 
+    }
+
+    .left-side, .right-side { padding: 20px; }
+    .left-side { border-right: 1px solid #334155; }
+    
+    .label { 
+      font-size: 14px; 
+      color: #94a3b8; 
+      text-transform: uppercase; 
+      letter-spacing: 1.5px; 
+      margin-bottom: 15px; 
+      font-weight: 700; 
+    }
+
+    .val-large { 
+      font-size: 24px; 
+      font-weight: bold; 
+      color: white; 
+      margin-bottom: 5px; 
+    }
+
+    .val-med { font-size: 18px; font-weight: bold; color: #cbd5e1; }
+
+    /* ===========================================================================
+       V. ANALYTICAL CLIMATE SECTION (Divider Fix)
+       =========================================================================== */
+    /* THE DIVIDER LINE */
+    .analytical-divider {
+      font-size: 14.5px; 
+      color: #cbd5e1; 
+      margin-top: 15px; 
+      border-top: 1px solid #334155; 
+      padding-top: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    /* AVG PERIOD NOTATION */
+    .avg-notation {
+      font-size: 11px; 
+      color: #94a3b8; 
+      margin-top: 5px; 
+      text-transform: uppercase; 
+      letter-spacing: 1px;
+    }
+
+    /* ===========================================================================
+       VI. RESEARCH MILESTONES & LEGEND
+       =========================================================================== */
+    #task-display { 
+      font-size: 14px; 
+      font-style: italic; 
+      color: #38bdf8; 
+      transition: opacity 1.5s ease-in-out; 
+      opacity: 0; 
+      font-weight: 500; 
+    }
+    
+    .legend-container { 
+      display: flex; 
+      gap: 20px; 
+      margin-bottom: 20px; 
+      font-size: 13px; 
+      color: #94a3b8; 
+      font-weight: 600; 
+      text-transform: uppercase; 
+    }
+
+    .status-dot { 
+      width: 10px; 
+      height: 10px; 
+      border-radius: 50%; 
+      display: inline-block; 
+      margin-right: 8px; 
+    }
+
+    .insight-tip { 
+      font-size: 14px; 
+      color: #38bdf8; 
+      margin: 25px 0; 
+      font-weight: 500; 
+      font-style: italic; 
+    }
+
+    /* ===========================================================================
+       VII. INVENTORY TABLE & KEIKI BADGE
+       =========================================================================== */
+    .keiki-badge { 
+      font-size: 9px; 
+      background: rgba(56, 189, 248, 0.15); 
+      padding: 2px 10px; 
+      border-radius: 20px; 
+      margin-left: 8px; 
+      color: var(--accent); 
+      font-weight: bold; 
+      border: 1px solid var(--accent); 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px;
+    }
+
+    .table-responsive { 
+      width: 100%; 
+      overflow-x: auto; 
+      border-radius: 12px; 
+      background: var(--card); 
+      border: 1px solid #334155; 
+    }
+
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      min-width: 850px; 
+    }
+
+    th { 
+      text-align: left; 
+      padding: 15px; 
+      background: #0f172a; 
+      color: #94a3b8; 
+      font-size: 12px; 
+      text-transform: uppercase; 
+    }
+
+    td { 
+      padding: 10px 15px; 
+      border-bottom: 1px solid #334155; 
+      font-size: 12.5px; 
+      white-space: nowrap; 
+    }
+
+    /* ===========================================================================
+       VIII. CHANGELOG MODAL & STICKY CLOSE
+       =========================================================================== */
+    #changelog-modal { 
+      display:none; 
+      position:fixed; 
+      top:0; 
+      left:0; 
+      width:100%; 
+      height:100%; 
+      background:rgba(15, 23, 42, 0.9); 
+      z-index:9999; 
+      justify-content:center; 
+      align-items:center; 
+    }
+
+    .modal-box { 
+      position: relative; 
+      background: var(--card); 
+      padding: 40px; 
+      border-radius: 12px; 
+      border: 1px solid var(--accent); 
+      max-width: 800px; 
+      width: 90%; 
+      max-height: 80vh; 
+      overflow-y: auto; 
+    }
+
+    .close-modal-btn { 
+      position: sticky; 
+      top: -20px; 
+      float: right; 
+      background: #334155; 
+      color: white; 
+      border: none; 
+      padding: 8px 15px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-size: 11px; 
+      font-weight: bold; 
+      text-transform: uppercase; 
+      z-index: 10; 
+      margin-bottom: 10px; 
+    }
+  </style></head>
+<body>
+
+  <div id="loading-overlay">
+    <div id="loading-header">Greenhouse Inventory</div>
+    <div class="spinner"></div>
+    <p id="load-phrase" style="margin-top: 20px; color: var(--accent); font-weight: 600;">Gathering greenhouse vitals...</p>
+    <p style="color: #64748b; font-size: 12px; margin-top: 10px;">Wait Time ~ 15 seconds (Based on connection)</p>
+  </div>
+
+  <div class="mission-box">
+    <h1>🖋️ Mission Statement</h1>
+    <p>This system serves as the definitive analytical record for the collection. Its purpose is to bridge the gap between daily greenhouse maintenance and long-term botanical documentation. Through automated tracking of repotting cycles, bloom history, and climate data, the system maintains a high-fidelity archive of plant health to support ongoing research and conservation efforts.</p>
+  </div>
+
+  <div class="button-group">
+    <a href="https://docs.google.com/spreadsheets/d/1UrcoDPCyKMuMPp9-sYqYoSnZbNQZvxK09ISzvIGaSHo/edit" target="_blank" class="nav-btn">Botanical Registry ↗</a>
+    <a href="https://blog.thepottedhistorian.com/" target="_blank" class="nav-btn">Research Blog</a>
+    <a href="https://www.thepottedhistorian.com/" target="_blank" class="nav-btn">Research Website</a>
+    <button class="nav-btn" onclick="openLog()">Changelog</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="split-card">
+      <div class="left-side">
+        <div class="label">Collection Status</div>
+        <div class="val-large" id="s-total">--</div>
+        <div class="val-med" style="margin-top:5px;"><span id="s-bloom">--</span> In Bloom 🌸</div>
+      </div>
+<div class="right-side">
+  <div class="label">Greenhouse Environment</div>
+  <div class="val-large" id="env-temp">--</div>
+  <div class="val-med" style="color: var(--accent);"><span id="env-hum">--</span>% RH</div>
+  
+  <div class="val-med" id="env-vpd" style="color: #cbd5e1; margin-top: 5px; font-size: 14px;">--</div>
+  
+  <div id="env-highlow" class="analytical-divider">--</div>
+  
+  <div class="avg-notation">Avg for 24 hr period</div>
+</div>
+    </div>
+    <div class="split-card">
+      <div class="left-side">
+        <div class="label">Research Progress</div>
+        <div class="val-large" id="s-res">--</div>
+        <div class="val-med" style="color: white; margin-top:10px;" id="s-hours-total">--</div>
+        <div class="val-small" style="color: #64748b; font-size: 12px; margin-top:5px;">*An average of 300hrs/year</div>
+      </div>
+      <div class="right-side">
+        <div class="label">Research Milestones</div>
+        <div id="task-display"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-container">
+    <div><span class="status-dot" style="background:#10b981"></span> On Schedule</div>
+    <div><span class="status-dot" style="background:#f59e0b"></span> Repot Soon</div>
+    <div><span class="status-dot" style="background:#ef4444"></span> Overdue</div>
+  </div>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+    <input type="text" id="search-bar" onkeyup="filterTable()" style="flex-grow:1; padding:15px; background:#111827; border:1px solid #334155; color:white; border-radius:8px;" placeholder="Search collection...">
+    <div id="result-count" style="margin-left:15px; font-size:12px; color:var(--accent); font-weight:bold;"></div>
+  </div>
+ 
+  <div class="insight-tip" style="font-size: 14px; color: #38bdf8; margin: 25px 0; font-weight: 500; font-style: italic;">💡 Horticultural Insight: Click on any Orchid Name to access its specific ID Ledger and history.</div>
+
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>ID</th><th>Genus</th><th>Orchid Name</th><th>Acquisition</th><th>Last Bloom</th><th>Avg Duration</th><th>Status</th></tr></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <div id="changelog-modal" onclick="closeLog()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <button onclick="closeLog()" class="close-modal-btn">Close X</button>
+      <h2 style="color: var(--accent); margin-top: 0;">📜 System Changelog</h2>
+      <pre id="log-content" style="white-space: pre-wrap; font-family: monospace; color: #cbd5e1; line-height: 1.6; font-size: 13px;">Loading logs...</pre>
+    </div>
+  </div>
+
+  <script>
+    const phrases = ["Gathering greenhouse vitals...", "Mist in progress: Hydrating the dashboard...", "Rooting through the inventory..."];
+    let pIdx = 0;
+    const phraseInterval = setInterval(() => {
+      document.getElementById('load-phrase').innerText = phrases[pIdx];
+      pIdx = (pIdx + 1) % phrases.length;
+    }, 3000);
+
+    let allData = [], taskList = [], taskIdx = 0;
+
+    window.onload = () => {
+      google.script.run.withSuccessHandler(res => {
+        clearInterval(phraseInterval);
+        allData = res.collection;
+        taskList = res.tasks;
+        
+        document.getElementById('env-temp').innerText = res.stats.temp;
+        document.getElementById('env-hum').innerText = res.stats.hum;
+        document.getElementById('env-highlow').innerText = res.stats.highLow; 
+        
+        document.getElementById('env-vpd').innerText = res.stats.vpd;
+        
+        document.getElementById('s-total').innerText = res.stats.total + " Specimens";
+        document.getElementById('s-bloom').innerText = res.stats.blooming;
+        document.getElementById('s-res').innerText = res.stats.research;
+        document.getElementById('s-hours-total').innerText = res.stats.hours + " Total Dedicated Hours";
+        
+        renderTable(allData);
+        rotateTasks();
+        document.getElementById('loading-overlay').style.display = 'none';
+      }).getDashboardData();
+    };
+
+    /* MILESTONE ROTATOR: SMOOTH FADE */
+    function rotateTasks() {
+      const display = document.getElementById('task-display');
+      if (!taskList.length) { display.innerText = "No milestones logged."; display.style.opacity = 1; return; }
+      
+      const update = () => {
+        display.style.opacity = 0; // Fade out
+        setTimeout(() => {
+          display.innerText = "✓ " + taskList[taskIdx];
+          display.style.opacity = 1; // Fade in
+          taskIdx = (taskIdx + 1) % taskList.length;
+        }, 1500); // Allow time for fade out
+      };
+      update();
+      setInterval(update, 6000); 
+    }
+
+    function renderTable(data) {
+      document.getElementById('table-body').innerHTML = data.map(o => `
+        <tr>
+          <td style="color:#94a3b8">#${o.id}</td>
+          <td><i>${o.genus}</i></td>
+          <td>
+            <span class="status-dot" style="background:${o.repotColor}"></span>
+            <a href="${o.url}" target="_blank" style="color:var(--accent); text-decoration:none; font-weight:bold;">${o.name}</a>
+            ${o.isKeiki ? '<span class="keiki-badge">KEIKI</span>' : ''}
+          </td>
+          <td>${o.acquisition}</td>
+          <td>${o.lastBloom}</td>
+          <td>${o.bloomAvg}</td>
+          <td style="color:var(--bloom-text); font-weight:bold;">${o.bloomDisplay}</td>
+        </tr>`).join('');
+      document.getElementById('result-count').innerText = data.length + " Specimens Found";
+    }
+
+    function filterTable() {
+      const q = document.getElementById('search-bar').value.toLowerCase();
+      renderTable(allData.filter(o => 
+        o.name.toLowerCase().includes(q) || 
+        o.genus.toLowerCase().includes(q) || 
+        o.id.toString().includes(q)
+      ));
+    }
+
+    function openLog() {
+      document.getElementById('changelog-modal').style.display = 'flex';
+      google.script.run.withSuccessHandler(html => {
+        document.getElementById('log-content').innerText = html;
+      }).getChangelogFromServer();
+    }
+    function closeLog() { document.getElementById('changelog-modal').style.display = 'none'; }
+  </script>
+</body>
+</html>
