@@ -1,0 +1,86 @@
+=============================================================================
+ORCHID MANAGEMENT SYSTEM - CHANGELOG
+=============================================================================
+PROJECT: The Potted Historian Analytical Record
+-----------------------------------------------------------------------------
+v4.1 (2026-05-26) - CLIMATE ANALYTICS & VPD INTEGRATION
+- ADDED: Vapor Pressure Deficit (VPD) real-time display to the Greenhouse Environment card.
+- OPTIMIZED: Climate engine integration; streamlined data aggregation for both cabinet sensors into a single unified analytical output.
+- FIXED: Resolved UI regression where RH percentage symbol was duplicating; cleaned up frontend concatenation.
+- REFACTORED: Webapp.gs; corrected reference scopes in calculateClimateVitals() to ensure data synchronization with the Master Environment sheet.
+
+v4.0 (2026-03-25) - STANDALONE "OFFICIAL" MIGRATION
+- MIGRATED: Final transition to Standalone Script project for Greenhouse Inventory.
+- ADDED: Environmental Averaging; Dashboard now calculates and displays a global Greenhouse average for Temp and RH from both cabinet sensors.
+- FIXED: Master Inventory loading; corrected logic to pull from "Inventory" sheet name specifically.
+- ADDED: Keiki Pill Badge; implemented rounded icon branding for registry specimens.
+- RESTORED: Maintenance Legend; added the Stoplight (Green/Yellow/Red) guide above search.
+- UPDATED: High/Low UI; increased font size and adjusted color for readability.
+- UPDATED: Loading UX; restored phrase rotator and "Wait Time" disclaimer (~15s).
+
+v3.0 (2026-03-18) - "DIGITAL TWIN" ARCHITECTURE & UI OVERHAUL
+- MIGRATED: Transitioned from Standalone back to a Container-Bound Script environment within the "Current Orchid Inventory" workbook for tighter integration and simplified authorization.
+- ADDED: Multi-Workbook Bridge; Dashboard now aggregates data from both the Master Inventory and the external Keiki Registry via openById().
+- ADDED: Interactive "System Changelog" Modal; allows version history review directly from the Greenhouse Dashboard UI.
+- ADDED: "Syncing Dashboard / Please Wait" loading overlay with smooth fade-out transition to manage multi-sheet data fetching latency.
+- ADDED: Live Research Stats; Research % and Dedicated Project Time now pull directly from cells [C10] and [C11] on the "Greenhouse Dashboard" tab.
+- ADDED: "Avg Duration" Column; pulls historical bloom performance data directly from cell [B8] of every individual Orchid ID sheet.
+- ADDED: "Genus" Column [Column C] integration for both Master and Keiki sheets.
+- UPDATED: Project Methodology; rewritten as a cohesive, paragraph-style narrative based on the Project ReadMe for a warmer, professional tone.
+- UPDATED: Research Progress Card; now explicitly includes "Hours" suffix for cell [C11] data and the "*An average of 300hrs/year" project notation.
+- UPDATED: Bloom Status Logic; STRICT filtering implemented to omit "Not in Bloom" strings. Dashboard now only displays active states (Bloom, Bud, Spike) or remains blank.
+- UPDATED: Table Order; standardized to [ID | Genus | Name | Acquisition | Last Bloom | Avg Duration | Bloom Status].
+- FIXED: Search Bar Functionality; restored real-time filtering for Name, ID, and Genus queries via 'onkeyup' trigger.
+- FIXED: Acquisition Date "Undefined" error; corrected mapping to [Column I] in Master and [Separation Date] in Keiki sheets.
+- FIXED: "Unknown Error" on cross-talk; updated appsscript.json manifest with explicit OAuth Scopes for Spreadsheet and Drive access.
+
+v2.0 (2026-03-18) - STANDALONE "PRO" ARCHITECTURE MIGRATION (Deprecated)
+- MIGRATED: Transitioned script logic to Standalone Project (Later reverted to v3.0 Bound for stability).
+- ADDED: "KEIKI" UI Badging in the Dashboard Registry.
+- UPDATED: Govee Import workflow to utilize dedicated Folder IDs.
+
+v1.6 (2026-03-17) - UI, DATA INTEGRITY & DOCUMENTATION OVERHAUL
+- UPDATED: "History-First" Sync Architecture based on ID Sheet logs [A38].
+- UPDATED: Repot Due Date standardized to [D10] with forced Long Date format.
+- UPDATED: Frequency Logic; system targets "Upper End" of ranges (e.g. 24mo).
+- ADDED: Universal Stoplight Formatting for Inventory and Maintenance logs.
+- ADDED: "Repot Date Preview" HTML dialog (1100x850) with calculation audit.
+- FIXED: Date.setMonth() logic for December-to-January transitions.
+
+v1.5 (2026-03-10) - VALIDATION & BLOOM LOGGING
+- ADDED: System Health Check utility for ID/Sheet validation.
+- ADDED: "In Spike" logging and bloom status icon formatting.
+
+v1.4 (2026-02-28) - CLIMATE INTEGRATION
+- ADDED: Govee Monthly Importer integration for Drive-based climate data.
+
+v1.3 (2026-02-27) - REPOSITORY & RESEARCH INTEGRATION
+- REPOSITORY: Launched the "Satyrion Codex" research tracker to bridge physical greenhouse management with historical botanical study.
+- LOGIC: Finalized first-generation Repotting Calculation engine utilizing genus-specific growth cycles and "upper-end" frequency ranges.
+
+v1.2 (2026-02-01) - AUTOMATION & PROVISIONING
+- AUTOMATION: Implemented "New Orchid Sheet" script to automate the provisioning of individual specimen ledgers for new acquisitions.
+- TEMPLATING: Standardized the ID Sheet layout to include automated maintenance logs and bloom history archival logic.
+
+v1.1 (2026-01-01) - INITIAL SYSTEM ARCHITECTURE
+- INITIAL SETUP: Developed the core "Container-Bound" architecture for centralized specimen tracking and ID indexing.
+- ARCHITECTURE: Established the Master ID Sheet as the primary database source for the Greenhouse Management System.
+
+v1.0 (2025-12-31) - COLLECTION EXPANSION
+- RESEARCH: Expanded the collection to include specialized "Satyrion" candidates (Phragmipedium, Cattleya) to test diverse growth cycles.
+
+v0.9 (2025-10-15) - EVENT-DRIVEN WORKBOOKS
+- PROTOTYPING: Initiated the transition from a static list to a functional, event-driven workbook architecture.
+
+v0.8 (2025-06-11) - FIRST AUTOMATION DEPLOYMENT
+- AUTOMATION: Developed the first Google Apps Script trigger to auto-date Column H when status changed to "In Bloom."
+
+v0.7 (2025-06-10) - DIGITAL HUB CONCEPTUALIZATION
+- CONCEPT: First formal conceptualization of a centralized digital hub for orchid horticultural data and historical documentation.
+
+v0.6 (2025-04-20) - SYSTEM SCHEMATICS
+- SCHEMATIC: Drafted the initial layout for what would become the Master Inventory and ID-specific ledger sheets.
+
+v0.5 (2025-03-03) - FOUNDATIONAL NAVIGATION
+- NAVIGATION: Implemented cross-tab hyperlinking to organize individual specimen data across a multi-sheet environment.
+=============================================================================
