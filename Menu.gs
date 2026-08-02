@@ -2,13 +2,16 @@
  * -----------------------------------------------------------------------------
  * ORCHID MANAGEMENT SYSTEM - CONSOLIDATED MENU (Menu.gs)
  * -----------------------------------------------------------------------------
- * Version: 5.1.2
- * Updated: 2026-05-10
+ * Version: 6.0.0
+ * Updated: 2026-08-01
  * Project: The Satyrion Chronicles / Orchid Tracker
- * * CHANGE LOG:
+ * CHANGE LOG:
  * - Sanitized all external URLs using ScriptProperties for GitHub security.
  * - Integrated automatic Sidebar launch on document open.
  * - Added visibility utilities for managing a large collection of ID sheets.
+ * - Integrated Export to XLSX utility into System Formatting submenu.
+ * - Added Date Standardization functions to System Formatting submenu.
+ * - Integrated System Manual & README viewer launcher (showSystemReadmeModal).
  * -----------------------------------------------------------------------------
  */
 
@@ -68,11 +71,18 @@ function onOpen() {
         .addItem("Refresh All Stoplight Dates", "applyAllSystemStoplights") 
         .addItem("Fix All Timestamps", "fixAllPhasesSequentially")
         .addSeparator()
+        .addItem("📅 Standardize Dates (Selected Range)", "standardizeSelectedDates")
+        .addItem("📅 Standardize Dates (Active Sheet)", "standardizeActiveSheetDates")
+        .addItem("📅 Standardize All Inventory & ID Dates (1-65)", "standardizeAllOrchidInventoryDates")
+        .addSeparator()
+        .addItem("📊 Export Clean XLSX to Excel", "exportWorkbookToXLSX")
+        .addSeparator()
         .addItem("🙈 Hide Current Sheet", "hideActiveSheet")
         .addItem("👁️ Show All Hidden Sheets", "showAllHiddenSheets")
     )
     .addSeparator()
     .addItem("🏥 Run System Health Check", "runSystemHealthCheck")
+    .addItem("📖 System Manual & README", "showSystemReadmeModal")
     .addToUi();
 
   // Auto-launch the sidebar on workbook open
@@ -168,4 +178,20 @@ function hideActiveSheet() {
 function showAllHiddenSheets() {
   const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
   sheets.forEach(sheet => sheet.showSheet());
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * DOCUMENTATION & MANUAL UTILITIES
+ * -----------------------------------------------------------------------------
+ */
+
+/**
+ * Launches the System README & Documentation Viewer modal (HelpFile.html).
+ */
+function showSystemReadmeModal() {
+  const html = HtmlService.createHtmlOutputFromFile('HelpFile')
+    .setWidth(950)
+    .setHeight(750);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Orchid Management System - Documentation & Manual');
 }

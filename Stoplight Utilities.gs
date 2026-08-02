@@ -26,7 +26,6 @@ function applyAllSystemStoplights() {
     // Skip hidden/archived rows or rows without IDs
     if (inv.isRowHiddenByUser(row) || !id) continue;
 
-    // TARGET SHIFTED COLUMN: NEXT_COL is now Index 20 (Column U)
     const nextDue = data[i][NEXT_COL];
     let color = "#10b981"; // Default Green (Emerald 500)
 
@@ -59,46 +58,10 @@ function applyAllSystemStoplights() {
 }
 
 /**
- * INTERNAL HELPER: Updates the visual indicators on a single plant ledger.
- * Targets the status header and the "Next Due" cell D10.
+ * INTERNAL HELPER: Updates repotting visual indicator on a single plant ledger.
+ * Targets ONLY the "Next Repot Due" cell D10.
  */
 function applyIndividualStoplight_(sheet, color) {
-  // Update the Status Background (Usually Row 5 or the Header)
-  sheet.getRange("D5").setBackground(color).setFontColor("white");
-  
-  // Update the Repot Date Background
+  // Target only Repot Date (Cell D10) - DO NOT touch D5 (Bloom Status)
   sheet.getRange("D10").setBackground(color).setFontColor("white");
-}
-
-/**
- * AUTOMATED FORMATTING: Handles the bloom icons and conditional colors.
- * Called by onEdit and Provisioning.
- */
-function applyBloomStatusFormatting(sheet) {
-  const statusRange = sheet.getRange("D5");
-  const status = statusRange.getValue().toString().toLowerCase();
-  
-  if (status.includes("in bloom")) {
-    statusRange.setValue("🌸 In Bloom");
-  } else if (status.includes("bud") || status.includes("spike")) {
-    statusRange.setValue("✨ " + status.charAt(0).toUpperCase() + status.slice(1));
-  } else if (status.includes("alive") || status.includes("dormant")) {
-    // Keeps current text but ensures formatting is clean
-    statusRange.setFontWeight("bold").setHorizontalAlignment("center");
-  }
-}
-
-/**
- * UTILITY: Refresh all bloom icons across the entire collection.
- */
-function refreshAllBloomStatusFormatting() {
-  const ss = SpreadsheetApp.openById(MASTER_ID);
-  const sheets = ss.getSheets();
-  
-  sheets.forEach(sheet => {
-    const name = sheet.getName().trim();
-    if (/^\d+$/.test(name)) {
-      applyBloomStatusFormatting(sheet);
-    }
-  });
 }

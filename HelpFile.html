@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      :root {
+        --primary: #2e7d32;
+        --primary-dark: #1b5e20;
+        --bg-color: #f8fafc;
+        --card-bg: #ffffff;
+        --text-color: #1e293b;
+        --border-color: #cbd5e1;
+      }
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 20px;
+        line-height: 1.5;
+      }
+      .header-card {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        color: white;
+        padding: 22px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      .header-card h2 { margin: 0 0 5px 0; font-size: 22px; }
+      .header-card p { margin: 0; opacity: 0.9; font-size: 13px; }
+
+      .section-title {
+        color: var(--primary-dark);
+        border-bottom: 2px solid var(--primary);
+        padding-bottom: 5px;
+        margin-top: 25px;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .module-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .module-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      }
+
+      .module-card h4 {
+        margin: 0 0 8px 0;
+        color: var(--primary-dark);
+        font-size: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .badge {
+        background: #e8f5e8;
+        color: var(--primary-dark);
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        border: 1px solid #a5d6a7;
+        font-weight: bold;
+      }
+
+      .module-card p { margin: 0 0 10px 0; font-size: 13px; color: #334155; }
+      
+      ul { margin: 5px 0 0 0; padding-left: 18px; font-size: 12px; color: #475569; }
+      li { margin-bottom: 6px; }
+
+      code {
+        background: #f1f5f9;
+        color: #0f172a;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 11px;
+      }
+
+      .detail-block {
+        background: #f8fafc;
+        border-left: 3px solid var(--primary);
+        padding: 8px 12px;
+        margin-top: 8px;
+        font-size: 12px;
+        color: #334155;
+      }
+
+      .btn-close {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        background: var(--primary-dark);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 25px;
+        font-size: 14px;
+      }
+      .btn-close:hover { background: #0f3813; }
+    </style>
+  </head>
+  <body>
+
+    <div class="header-card">
+      <h2>🌸 The Satyrion Chronicles</h2>
+      <p>Orchid Management System — System Architecture & Technical Manual (v6.0)</p>
+    </div>
+
+    <div class="section-title">📂 Detailed System Module Index</div>
+
+    <div class="module-grid">
+      
+      <!-- Module 1 -->
+      <div class="module-card">
+        <h4>1. System Security, Vault & Global Configuration <span class="badge">Security Layer</span></h4>
+        <p>Decouples private environment variables (Spreadsheet GUIDs, Drive Folder IDs) from script logic to allow safe public and repository sharing.</p>
+        <ul>
+          <li><code>Config.gs / Globals.gs</code>: Exposes the global <code>CONFIG</code> object wrapper. Securely fetches <code>MAIN_SS_ID</code> and <code>GOVEE_FOLDER_ID</code> via <code>PropertiesService.getScriptProperties()</code>.</li>
+          <li><code>Sanitizer.gs</code>: Executes <code>runSystemSanitization()</code> to extract the active spreadsheet key and write it to private properties during initial setup.</li>
+        </ul>
+        <div class="detail-block">
+          <strong>Archival Standard:</strong> Transitioned project branding to <em>The Satyrion Chronicles</em> across all core manifest references.
+        </div>
+      </div>
+
+      <!-- Module 2 -->
+      <div class="module-card">
+        <h4>2. Care Logging, Maintenance & Historical Sync <span class="badge">Care Pipeline</span></h4>
+        <p>Enforces structured data collection for daily maintenance while providing bulk entry and historical backfill mechanisms.</p>
+        <ul>
+          <li><code>WateringLogic.gs & WateringDialog.html</code>: Modeless interactive modal dialog. Accepts comma-separated non-adjacent row inputs (e.g., <code>38, 47, 51</code>) and restricts care methods to standard options (<em>Soak, Mist, Flush, Pour, Spot Watering</em>).</li>
+          <li><code>Row 56+ Ledger Transcription</code>: Bulk watering automatically writes to Columns C, D, and E on the <code>Maintenance Log</code> while targeting <code>Row 56+</code> on individual specimen tabs using bottom-up <code>A100</code> targeting.</li>
+          <li><code>Watering.gs</code>: Provides <code>syncMaintenanceByDatePrompt()</code> to validate date inputs (<code>YYYY-MM-DD</code>) and backfill past care records into individual ID ledgers with timestamp duplicate prevention.</li>
+        </ul>
+      </div>
+
+      <!-- Module 3 -->
+      <div class="module-card">
+        <h4>3. Bloom Lifecycle & Stoplight Visual Engine <span class="badge">Visual Indicators</span></h4>
+        <p>Separates bloom status logging from maintenance schedule alerts to eliminate cell coordinate overlap errors.</p>
+        <ul>
+          <li><code>Bloom Utilities.gs</code>: Controls Cell <code>D5</code> on individual ID sheets. Displays active blooms in Emerald Green (<code>#10b981</code>) and non-blooming states in Soft Red (<code>#fca5a5</code>).</li>
+          <li><code>Stoplights.gs</code>: Restricts repotting schedule stoplights strictly to Cell <code>D10</code> (<strong>Next Repot Due</strong>). Evaluates Column U (<code>NEXT_COL</code>) against current date: 
+            <strong>Red</strong> (Overdue), <strong>Amber</strong> (&lt; 30 days), <strong>Green</strong> (OK).</li>
+          <li><code>Cleanup.gs</code>: Houses <code>forceCleanupBloomStatuses()</code>. Evaluates <code>A20:B33</code> in individual ledgers; recognizes placeholder hyphens (<code>-</code>) in Column B as closed cycles to reset false "In Bloom" badges.</li>
+        </ul>
+      </div>
+
+      <!-- Module 4 -->
+      <div class="module-card">
+        <h4>4. Microclimate Telemetry & Maintenance <span class="badge">Sensory Pipeline</span></h4>
+        <p>Automates environmental sampling and Drive storage maintenance for continuous climate monitoring.</p>
+        <ul>
+          <li><code>MicroclimateUpdater.gs</code>: Ingests Govee 3-column logs (<em>Milsbo, Rudsta A/B, Terrarium</em>) and AC Infinity 5-column feeds into cabinet tracking tabs while preventing duplicate timestamps.</li>
+          <li><code>90-Day Retention Pruning</code>: Sweeps cabinet telemetry tabs top-down via <code>pruneExpiredClimateLogs()</code> and purges samples older than 90 days.</li>
+          <li><code>SystemMaintenance.gs</code>: Safe-trashes Govee CSV backup exports older than 60 days in Google Drive via <code>cleanupGoveeArchiveFolder()</code>.</li>
+        </ul>
+      </div>
+
+      <!-- Module 5 -->
+      <div class="module-card">
+        <h4>5. Date Standardization & Export Engines <span class="badge">Data Integrity</span></h4>
+        <p>Maintains uniform display formatting and delivers flattened spreadsheet snapshots for external software.</p>
+        <ul>
+          <li><code>DateUtils.gs</code>: Executes <code>standardizeAllOrchidInventoryDates()</code> across <code>Inventory</code>, <code>Archived Orchids</code>, and ID sheets <code>1–65</code>. Converts dates to long text strings (<code>"MMMM d, yyyy"</code>) using forced single-quote prefixing (<code>'</code>) to preserve Google Sheets Table structures.</li>
+          <li><code>ExportToXLSX.gs</code>: Generates a flattened Drive copy, strips conditional formatting and dynamic formulas, unhides rows, and displays an HTML download modal for Microsoft Excel export.</li>
+          <li><code>Full Collection Harvester (v9.0.0)</code>: Extracts metadata from <code>Sheet39</code> and sub-table logs across specimen sheets <code>1–65</code>, staging clean arrays into external <em>Import_Manifest</em>, <em>Maintenance_Log</em>, and <em>Orchid_Specimen_Template</em> workbooks.</li>
+        </ul>
+      </div>
+
+      <!-- Module 6 -->
+      <div class="module-card">
+        <h4>6. System Navigation & External Embeds <span class="badge">UI / Embeds</span></h4>
+        <p>Provides central navigation controls and external web access endpoints.</p>
+        <ul>
+          <li><code>Sidebar.html</code>: Docked navigation drawer featuring numeric sheet jumping (e.g., jump to sheet ID), Keiki workbook tab bridges, and one-click sheet visibility toggles.</li>
+          <li><code>webapp.gs & GreenhouseEmbed.html</code>: Web app HTTP <code>GET</code> endpoint serving dark-mode status cards, live specimen counts, watering dates, research progress metrics, and an asynchronous phrase rotator.</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <button class="btn-close" onclick="google.script.host.close()">Close Manual</button>
+
+  </body>
+</html>

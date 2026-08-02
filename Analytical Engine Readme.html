@@ -1,0 +1,109 @@
+/**
+ * ==============================================================================
+ * 🌺 The Satyrion Chronicles — Analytical Engine README
+ * ==============================================================================
+ * Project      : Orchid Management System
+ * Architecture : Container-Bound & Standalone Hybrid (Google Apps Script / V8)
+ * Version      : 6.0 (Production Release)
+ * Last Audit   : August 1, 2026
+ * ==============================================================================
+ *
+ * EXECUTIVE SUMMARY:
+ * The Orchid Management System is a modular data pipeline designed to bridge 
+ * physical microclimate management, daily care logging, historical bloom 
+ * tracking, and archival research (The Satyrion Chronicles). 
+ *
+ * The system operates across 65+ individual specimen ledgers, a central 
+ * Master Inventory, multi-zone Govee climate sensors, and external Keiki 
+ * Registries. It features event-driven triggers, modeless HTML UI dialogs, 
+ * dynamic stoplight maintenance alerts, and automated database recycling 
+ * protocols.
+ *
+ * ==============================================================================
+ * CORE ARCHITECTURE & MODULE INDEX
+ * ==============================================================================
+ *
+ * 1. GLOBAL SETUP & SECURITY
+ *    - Globals.gs / Config.gs: Defines system constants, ID indices, timezones, 
+ *      and the CONFIG object wrapper. Serves as the security sanitization 
+ *      bridge by pulling sensitive Drive/Spreadsheet GUIDs from 
+ *      PropertiesService.getScriptProperties().
+ *    - Sanitizer.gs: A setup utility (runSystemSanitization()) that binds 
+ *      local spreadsheet and Drive folder IDs into private ScriptProperties 
+ *      to ensure public/GitHub repository exports remain sanitized.
+ *
+ * 2. USER INTERFACE & MENU SYSTEM
+ *    - Menu.gs: Builds the custom Orchid Tools top-level menu. Registers entry 
+ *      points for the Navigation Sidebar, Bulk Watering Dialog, Stoplight Sync, 
+ *      Date Standardization, and Diagnostic tools.
+ *    - Sidebar.html: A docked navigation drawer featuring direct numeric 
+ *      sheet-jumping (e.g., typing 12 jumps to Orchid ID 12), visibility 
+ *      toggles, and dynamic cross-tab links to external resources.
+ *    - DeveloperTools.gs: A diagnostic scanner (findDuplicateFunctions()) that 
+ *      checks global scope execution context for function name collisions or 
+ *      duplicate triggers.
+ *
+ * 3. CARE LOGGING & MAINTENANCE ENGINE
+ *    - main-onEdit.gs: Primary event-driven engine (onEdit). Handles automated 
+ *      bloom cycle date-pairing in individual specimen ledgers, auto-populates 
+ *      In Bloom status indicators, and logs maintenance timestamps.
+ *    - WateringLogic.gs & WateringDialog.html: A modeless HTML popup enabling 
+ *      non-adjacent row selection (38, 47, 51) for bulk watering entries (Soak, 
+ *      Mist, Flush, Pour, Spot Watering). Automatically transcribes logs to 
+ *      individual specimen ledgers at Row 56+.
+ *    - Watering.gs: Provides syncMaintenanceByDatePrompt(), allowing historical 
+ *      care events logged in bulk on the Maintenance Log to be retroactively 
+ *      backfilled into individual plant sheets.
+ *
+ * 4. BLOOM STATUS & MAINTENANCE VISUALS
+ *    - Bloom Utilities.gs: Manages visual formatting for Cell D5 on individual 
+ *      specimen sheets. Formats active blooms in Emerald Green (#10b981) and 
+ *      inactive states in Soft Light Red (#fca5a5).
+ *    - Stoplights.gs: Calculates maintenance proximity against Column U (NEXT_COL). 
+ *      Strictly targets Cell D10 (Next Repot Due) for stoplight colors (Red = 
+ *      Overdue, Amber = < 30 days, Green = OK), resolving visual coordinate 
+ *      overlaps with Cell D5.
+ *    - Cleanup.gs: Contains forceCleanupBloomStatuses(), a dash-aware cleanup 
+ *      routine that scans Bloom Logs (A20:B33) and forces stale In Bloom 
+ *      badges back to Not in Bloom if Column B contains an end-date or 
+ *      placeholder hyphen (-).
+ *
+ * 5. CALCULATION & PROVISIONING ENGINES
+ *    - batch-tools.gs & repot-preview.html: Calculates collection-wide 
+ *      repotting cycles based on acquisition dates and plant growth frequency. 
+ *      Launches an HTML modal preview (repot-preview.html) before committing 
+ *      updates simultaneously to Inventory [Column U], Maintenance Log 
+ *      [Column G], and Orchid ID sheets [Cell D10].
+ *    - Archive.gs: Implements sheet recycling protocols. When specimens are 
+ *      decommissioned, their tabs are scrubbed, reset, and renamed to TMP_[ID] 
+ *      for immediate re-provisioning to stay within workbook tab bounds.
+ *    - SheetFormatting.gs: Copies structure and formatting styles from a 
+ *      reference sheet across designated specimen tabs without overwriting 
+ *      plant data.
+ *
+ * 6. ENVIRONMENTAL TELEMETRY & DATA PROCESSING
+ *    - MicroclimateUpdater.gs: Cross-workbook synchronization engine. Ingests 
+ *      3-column and 5-column microclimate logs from Govee sensors (Milsbo, 
+ *      Rudsta A/B, Terrarium) and AC Infinity controllers into active cabinet 
+ *      tabs, enforcing a 90-day retention cutoff to optimize workbook 
+ *      performance.
+ *    - SystemMaintenance.gs: Safe-trashes archived Govee CSV export files 
+ *      older than 60 days in Google Drive to prevent storage clutter.
+ *    - DateUtils.gs: Converts short dates into long plain-text strings 
+ *      ("MMMM d, yyyy") across all 65+ tabs using forced string literals ('), 
+ *      ensuring 100% compatibility with typed Google Sheets Tables.
+ *    - ExportToXLSX.gs: Generates a flattened, formula-stripped, unhidden copy 
+ *      of the workbook for Microsoft Excel export, delivering a direct download 
+ *      link via modal.
+ *    - Full Collection Harvester (v9.0.0): Harvests metadata from Sheet39 and 
+ *      sub-table logs across specimen sheets 1–65, staging clean arrays into 
+ *      external Import_Manifest, Maintenance_Log, and Orchid_Specimen_Template 
+ *      workbooks.
+ *
+ * 7. EXTERNAL WEB APP EMBED
+ *    - webapp.gs & GreenhouseEmbed.html: HTTP GET web app service (doGet). 
+ *      Serves an embedded dashboard widget with dark-mode styling, live 
+ *      collection statistics, watering dates, research progress meters, and 
+ *      an animated loading phrase rotator.
+ * ==============================================================================
+ */

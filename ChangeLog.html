@@ -3,6 +3,14 @@ ORCHID MANAGEMENT SYSTEM - CHANGELOG
 =============================================================================
 PROJECT: Orchid Management System
 -----------------------------------------------------------------------------
+v6.0 (2026-08-01) - BLOOM SYNC REPAIR & STOPLIGHT ISOLATION
+- FIXED: Bloom Cycle Pairing Engine (main-onEdit.gs); overhauled 'logBloomEvent_' to scan and close ALL unclosed open bloom rows upon new cycle start or state end, eliminating dangling unclosed historical rows in individual ID ledgers.
+- FIXED: Legacy Dash Handling (Cleanup.gs); updated force cleanup evaluation logic in 'forceCleanupBloomStatuses' to recognize hyphens/dashes (-) in Column B as valid closed states, preventing legacy pre-logging records from triggering false "In Bloom" statuses.
+- FIXED: Stoplight Coordinate Collision (Stoplights.gs); restricted 'applyIndividualStoplight_' strictly to Cell D10 (Next Repot Due), preventing repotting schedule triggers from overwriting Cell D5 (Bloom Status) background colors and icons.
+- UPDATED: Bloom Status Visual Palette (Bloom Utilities.gs); updated Cell D5 formatting to feature Emerald Green (#10b981) for active blooms and Soft Light Red (#fca5a5) with white text for "Not in Bloom" states.
+- UTILITY: Added 'forceCleanupBloomStatuses' dash-aware force-reset script to repair stale "In Bloom" badges across the 65-tab collection.
+- DOCUMENTATION: Audited all 16 project script files and compiled the complete System Reference & Code Base Index for print-ready archiving.
+
 v5.1 (2026-05-09) - UI NAVIGATION & WORKFLOW CONSOLIDATION
 - ADDED: Navigation Sidebar (Sidebar.html); implemented a custom HTML/CSS navigator to group 50+ tabs into logical clusters (Active Inventory, Research, Backend).
 - ADDED: Cross-Tab Communication Bridge; implemented 'setActiveSheet' via google.script.run to allow instant UI-driven navigation without manual tab scrolling.
@@ -18,7 +26,6 @@ v5.0 (2026-05-08) - ARCHIVAL SCALING & SENSORY EXPANSION
 - FIXED: Provisioning Logic; updated 'provisionNewOrchid' to prioritize "TMP_" recycled sheets before generating new tabs, significantly reducing workbook bloat.
 - FIXED: System Diagnostics; implemented a full-scale alignment check in Health-Diagnostics.gs to verify Column S (Frequency) and Column I (Maintenance) parity across all 50+ specimen tabs.
 - TECHNICAL: Mapped "Target Foot Candles" to Column O in Master Inventory for light-intensity research tracking.
-
 
 v4.1 (2026-05-01) - MODULAR MAINTENANCE & LEDGER INTEGRITY
 - ADDED: "Watering & Maintenance" Submenu; integrated a dedicated UI branch under Orchid Tools for daily care tasks.

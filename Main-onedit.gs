@@ -2,7 +2,7 @@
  * -----------------------------------------------------------------------------
  * ORCHID MANAGEMENT SYSTEM - CENTRAL EVENT HANDLER (main-onEdit.gs)
  * -----------------------------------------------------------------------------
- * Updated: 2026-04-17 - Finalized Row Pairing & Sequence Logic.
+ * Version: 11.0.0 - Enhanced Bloom Pairing, Column L Date Sync & Auto Duration
  * -----------------------------------------------------------------------------
  */
 
@@ -45,27 +45,18 @@ function onEdit(e) {
         const notesVal = sheet.getRange(currentRow, ML_NOTES_COL).getValue();
         
         if (methodVal) {
-  const now = new Date();
-  sheet.getRange(currentRow, ML_DATE_COL).setValue(now);
-  
-  if (orchidSheet) {
-    // REPLACEMENT LOGIC START:
-    // We target Column A starting at your maintenance ledger (Row 56).
-    // This finds the last entry in that specific block and moves down one.
-    let targetRow = orchidSheet.getRange("A100").getNextDataCell(SpreadsheetApp.Direction.UP).getRow() + 1;
-    
-    // Safety: If the ledger is totally empty, start at row 56.
-    if (targetRow < 56) {
-      targetRow = 56;
-    }
-    
-    // Write the data to the Individual Orchid Sheet
-    orchidSheet.getRange(targetRow, 1).setValue(now);       // Date
-    orchidSheet.getRange(targetRow, 2).setValue(methodVal); // Method (e.g., Watering)
-    orchidSheet.getRange(targetRow, 3).setValue(notesVal);  // Notes
-    // REPLACEMENT LOGIC END
-  }
-}
+          const now = new Date();
+          sheet.getRange(currentRow, ML_DATE_COL).setValue(now);
+          
+          if (orchidSheet) {
+            let targetRow = orchidSheet.getRange("A100").getNextDataCell(SpreadsheetApp.Direction.UP).getRow() + 1;
+            if (targetRow < 56) targetRow = 56;
+            
+            orchidSheet.getRange(targetRow, 1).setValue(now);       // Date
+            orchidSheet.getRange(targetRow, 2).setValue(methodVal); // Method
+            orchidSheet.getRange(targetRow, 3).setValue(notesVal);  // Notes
+          }
+        }
       }
 
       if (startCol <= 9 && lastCol >= ML_REPOT_DATE) {
@@ -103,16 +94,18 @@ function onEdit(e) {
 
       if (startCol === BLOOM_STATUS_COL + 1 && orchidSheet) {
         const rawValue = range.getValue().toString();
-        orchidSheet.getRange("D5").setValue(rawValue);
+        orchidSheet.getRange("D5").setValue(rawValue); // Update Side Card (Bloom Status)
         
         const cleanVal = rawValue.replace(/[^\w\s]/gi, '').trim().toLowerCase();
         
+        // Grab explicit date from Column L (Last Bloom Date) on the edited row
+        const inventoryBloomDate = sheet.getRange(currentRow, 12).getValue();
+        
         if (cleanVal === "in bloom") {
-          sheet.getRange(currentRow, LAST_BLOOM_COL + 1).setValue(new Date());
-          logBloomEvent_(orchidSheet, "start");
+          logBloomEvent_(orchidSheet, "start", inventoryBloomDate);
         } 
         else if (cleanVal === "not in bloom") {
-          logBloomEvent_(orchidSheet, "end");
+          logBloomEvent_(orchidSheet, "end", inventoryBloomDate);
         }
         
         if (typeof applyBloomStatusFormatting === 'function') {
@@ -124,46 +117,95 @@ function onEdit(e) {
 }
 
 /**
- * Helper: Record bloom history on individual sheet.
- * PAIRING LOGIC: Treats Row (A+B) as a single event.
+ * Helper: Record bloom history on individual sheet using explicit Inventory dates.
+ * PAIRING LOGIC: Auto-closes open bloom cycles and calculates duration in Column C.
  */
-function logBloomEvent_(orchidSheet, type) {
-  const logRange = orchidSheet.getRange("A20:B33");
+function logBloomEvent_(orchidSheet, type, targetDate) {
+  const logRange = orchidSheet.getRange("A20:C33");
   const logData = logRange.getValues(); 
-  let targetRowIndex = -1;
+  let openRowIndices = [];
+  let emptyRowIndex = -1;
+
+  // Collect ALL open rows to ensure no dangling unclosed bloom cycles remain
+  for (let i = 0; i < logData.length; i++) {
+    const hasStart = logData[i][0] !== "" && logData[i][0] !== null;
+    const hasEnd = logData[i][1] !== "" && logData[i][1] !== null;
+
+    if (hasStart && !hasEnd) {
+      openRowIndices.push(i);
+    }
+    if (!hasStart && !hasEnd && emptyRowIndex === -1) {
+      emptyRowIndex = i;
+    }
+  }
+
+  const dateToApply = (targetDate instanceof Date && !isNaN(targetDate.getTime())) ? targetDate : new Date();
 
   if (type === "start") {
-    // 1. Check if the VERY last entry is an "open" bloom (Start date exists, End date is empty)
-    // If so, we DON'T start a new row. We assume the user is toggling/correcting.
-    for (let i = logData.length - 1; i >= 0; i--) {
-      if (logData[i][0] && !logData[i][1]) {
-        return; // Exit. An event is already open.
+    // Close ALL dangling open cycles first
+    if (openRowIndices.length > 0) {
+      openRowIndices.forEach(idx => {
+        const startDate = logData[idx][0] instanceof Date ? logData[idx][0] : new Date(logData[idx][0]);
+        orchidSheet.getRange(20 + idx, 2).setValue(dateToApply);
+        const durationStr = calculateDurationString_(startDate, dateToApply);
+        if (durationStr) orchidSheet.getRange(20 + idx, 3).setValue(durationStr);
+      });
+      
+      const lastOpenIdx = openRowIndices[openRowIndices.length - 1];
+      const nextRow = lastOpenIdx + 1;
+      if (nextRow < logData.length) {
+        orchidSheet.getRange(20 + nextRow, 1).setValue(dateToApply);
       }
-    }
-
-    // 2. Otherwise, find the first row that is COMPLETELY empty
-    for (let i = 0; i < logData.length; i++) {
-      if (!logData[i][0] && !logData[i][1]) { 
-        targetRowIndex = i;
-        break;
-      }
-    }
-    if (targetRowIndex !== -1) {
-      orchidSheet.getRange(20 + targetRowIndex, 1).setValue(new Date());
+    } else if (emptyRowIndex !== -1) {
+      orchidSheet.getRange(20 + emptyRowIndex, 1).setValue(dateToApply);
     }
   } 
   else if (type === "end") {
-    // Find the LAST row that has a start (A) but is missing an end (B)
-    for (let i = logData.length - 1; i >= 0; i--) {
-      // We check if it's a valid date or a non-empty string in A, and truly empty in B
-      if (logData[i][0] !== "" && logData[i][1] === "") { 
-        targetRowIndex = i;
-        break;
-      }
-    }
-    
-    if (targetRowIndex !== -1) {
-      orchidSheet.getRange(20 + targetRowIndex, 2).setValue(new Date());
+    // Close all open cycles
+    if (openRowIndices.length > 0) {
+      openRowIndices.forEach(idx => {
+        const startDate = logData[idx][0] instanceof Date ? logData[idx][0] : new Date(logData[idx][0]);
+        orchidSheet.getRange(20 + idx, 2).setValue(dateToApply);
+        const durationStr = calculateDurationString_(startDate, dateToApply);
+        if (durationStr) orchidSheet.getRange(20 + idx, 3).setValue(durationStr);
+      });
     }
   }
+}
+
+/**
+ * Helper: Formats duration between two Date objects into human-readable text.
+ */
+function calculateDurationString_(startDate, endDate) {
+  if (!(startDate instanceof Date) || isNaN(startDate.getTime()) ||
+      !(endDate instanceof Date) || isNaN(endDate.getTime()) || endDate < startDate) {
+    return "";
+  }
+
+  let start = new Date(startDate.getTime());
+  let end = new Date(endDate.getTime());
+
+  let years = end.getFullYear() - start.getFullYear();
+  let months = end.getMonth() - start.getMonth();
+  let days = end.getDate() - start.getDate();
+
+  if (days < 0) {
+    months--;
+    const prevMonthLastDay = new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+    days += prevMonthLastDay;
+  }
+
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+
+  let totalMonths = years * 12 + months;
+  let parts = [];
+
+  if (totalMonths > 0) parts.push(totalMonths + " month" + (totalMonths > 1 ? "s" : ""));
+  if (days > 0) parts.push(days + " day" + (days > 1 ? "s" : ""));
+  if (parts.length === 0) parts.push("0 days");
+
+  return parts.join(" ");
 }
