@@ -79,6 +79,7 @@ function onOpen() {
         .addSeparator()
         .addItem("🙈 Hide Current Sheet", "hideActiveSheet")
         .addItem("👁️ Show All Hidden Sheets", "showAllHiddenSheets")
+        .addItem("🌸 Recalculate Bloom Durations (1-65)", "updateAllBloomDurations")
     )
     .addSeparator()
     .addItem("🏥 Run System Health Check", "runSystemHealthCheck")

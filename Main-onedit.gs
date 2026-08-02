@@ -209,3 +209,20 @@ function calculateDurationString_(startDate, endDate) {
 
   return parts.join(" ");
 }
+
+/**
+ * Automatically recalculates bloom durations when an "Out of Bloom" 
+ * date is edited in Column B (Rows 20-35) on an ID sheet.
+ */
+function checkBloomDurationOnEdit(e) {
+  if (!e || !e.range) return;
+  
+  const range = e.range;
+  const sheet = range.getSheet();
+  const sheetName = sheet.getName().trim();
+
+  // Check if edit happened on a numerical ID sheet (1-65), in Column B, Row 20+
+  if (/^\d+$/.test(sheetName) && range.getColumn() === 2 && range.getRow() >= 20) {
+    updateSheetBloomDurations(sheet);
+  }
+}
