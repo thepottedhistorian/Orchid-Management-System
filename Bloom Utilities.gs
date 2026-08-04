@@ -1,9 +1,10 @@
 /**
  * -----------------------------------------------------------------------------
- * ORCHID INVENTORY - BLOOM VISUAL UTILITIES (Bloom Utilities.gs)
+ * ORCHID INVENTORY - BLOOM VISUAL & DURATION UTILITIES (Bloom Utilities.gs)
  * -----------------------------------------------------------------------------
- * Purpose: Applies conditional formatting and iconography (🌸, 🌱, 🌼, ⬜) to 
- * individual orchid sheets based on their current bloom status.
+ * Purpose: 
+ * 1. Applies conditional formatting and iconography (🌸, 🌱, 🌼, ⬜) to cell D5.
+ * 2. Recalculates and populates bloom cycle durations (Column C) across ID sheets.
  * -----------------------------------------------------------------------------
  */
 
@@ -65,4 +66,97 @@ function refreshAllBloomStatusFormatting() {
       applyBloomStatusFormatting(sheet);
     }
   });
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * BLOOM DURATION CALCULATORS
+ * -----------------------------------------------------------------------------
+ */
+
+/**
+ * Recalculates and populates bloom duration for a SINGLE Orchid ID sheet.
+ * Checks rows 20 to 35 for "In Bloom" (Col A) and "Out of Bloom" (Col B) dates.
+ */
+function updateSheetBloomDurations(sheet) {
+  if (!sheet) return;
+
+  const range = sheet.getRange("A20:C35");
+  const values = range.getValues();
+
+  for (let i = 0; i < values.length; i++) {
+    const rawStart = values[i][0]; // Column A
+    const rawEnd = values[i][1];   // Column B
+
+    if (rawStart && rawEnd) {
+      const startDate = (rawStart instanceof Date) ? rawStart : new Date(rawStart);
+      const endDate = (rawEnd instanceof Date) ? rawEnd : new Date(rawEnd);
+
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        const durationStr = calculateDurationString_(startDate, endDate);
+        sheet.getRange(20 + i, 3).setValue(durationStr); // Column C
+      }
+    }
+  }
+}
+
+/**
+ * MASTER BATCH RUNNER: Scans ALL Orchid ID sheets across the collection
+ * and fixes/updates bloom durations in Column C.
+ */
+function fixAllMissingBloomDurations() {
+  const ss = SpreadsheetApp.openById(MASTER_ID);
+  const sheets = ss.getSheets();
+  let updatedSheetsCount = 0;
+
+  sheets.forEach(sheet => {
+    const name = sheet.getName().trim();
+    if (/^\d+$/.test(name)) {
+      updateSheetBloomDurations(sheet);
+      updatedSheetsCount++;
+    }
+  });
+
+  try {
+    SpreadsheetApp.getUi().alert(`Bloom Log Sync Complete: Audited and updated bloom durations across ${updatedSheetsCount} Orchid ID sheets.`);
+  } catch (e) {
+    console.log(`Bloom Log Sync Complete: Audited ${updatedSheetsCount} sheets.`);
+  }
+}
+
+/**
+ * HELPER MATH ENGINE: Formats duration between two Date objects into human-readable text.
+ */
+function calculateDurationString_(startDate, endDate) {
+  if (!(startDate instanceof Date) || isNaN(startDate.getTime()) ||
+      !(endDate instanceof Date) || isNaN(endDate.getTime()) || endDate < startDate) {
+    return "";
+  }
+
+  let start = new Date(startDate.getTime());
+  let end = new Date(endDate.getTime());
+
+  let years = end.getFullYear() - start.getFullYear();
+  let months = end.getMonth() - start.getMonth();
+  let days = end.getDate() - start.getDate();
+
+  if (days < 0) {
+    months--;
+    const prevMonthLastDay = new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+    days += prevMonthLastDay;
+  }
+
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+
+  let totalMonths = years * 12 + months;
+  let parts = [];
+
+  if (totalMonths > 0) parts.push(totalMonths + " month" + (totalMonths > 1 ? "s" : ""));
+  if (days > 0) parts.push(days + " day" + (days > 1 ? "s" : ""));
+  if (parts.length === 0) parts.push("0 days");
+
+  return parts.join(" ");
 }

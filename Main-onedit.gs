@@ -2,7 +2,7 @@
  * -----------------------------------------------------------------------------
  * ORCHID MANAGEMENT SYSTEM - CENTRAL EVENT HANDLER (main-onEdit.gs)
  * -----------------------------------------------------------------------------
- * Version: 11.0.0 - Enhanced Bloom Pairing, Column L Date Sync & Auto Duration
+ * Version: 11.1.0 - Fixed Column L Auto-Timestamp & Single-Row Bloom Logging
  * -----------------------------------------------------------------------------
  */
 
@@ -97,15 +97,19 @@ function onEdit(e) {
         orchidSheet.getRange("D5").setValue(rawValue); // Update Side Card (Bloom Status)
         
         const cleanVal = rawValue.replace(/[^\w\s]/gi, '').trim().toLowerCase();
-        
-        // Grab explicit date from Column L (Last Bloom Date) on the edited row
-        const inventoryBloomDate = sheet.getRange(currentRow, 12).getValue();
+        const now = new Date();
         
         if (cleanVal === "in bloom") {
-          logBloomEvent_(orchidSheet, "start", inventoryBloomDate);
+          // 2a. Update Column L (Last Bloom Date) on Inventory sheet immediately
+          sheet.getRange(currentRow, 12).setValue(now);
+          
+          // 2b. Log the bloom start using current timestamp
+          logBloomEvent_(orchidSheet, "start", now);
         } 
         else if (cleanVal === "not in bloom") {
-          logBloomEvent_(orchidSheet, "end", inventoryBloomDate);
+          const inventoryBloomDate = sheet.getRange(currentRow, 12).getValue();
+          const targetEndDate = (inventoryBloomDate instanceof Date && !isNaN(inventoryBloomDate.getTime())) ? inventoryBloomDate : now;
+          logBloomEvent_(orchidSheet, "end", targetEndDate);
         }
         
         if (typeof applyBloomStatusFormatting === 'function') {
@@ -126,7 +130,6 @@ function logBloomEvent_(orchidSheet, type, targetDate) {
   let openRowIndices = [];
   let emptyRowIndex = -1;
 
-  // Collect ALL open rows to ensure no dangling unclosed bloom cycles remain
   for (let i = 0; i < logData.length; i++) {
     const hasStart = logData[i][0] !== "" && logData[i][0] !== null;
     const hasEnd = logData[i][1] !== "" && logData[i][1] !== null;
@@ -142,26 +145,19 @@ function logBloomEvent_(orchidSheet, type, targetDate) {
   const dateToApply = (targetDate instanceof Date && !isNaN(targetDate.getTime())) ? targetDate : new Date();
 
   if (type === "start") {
-    // Close ALL dangling open cycles first
-    if (openRowIndices.length > 0) {
-      openRowIndices.forEach(idx => {
-        const startDate = logData[idx][0] instanceof Date ? logData[idx][0] : new Date(logData[idx][0]);
-        orchidSheet.getRange(20 + idx, 2).setValue(dateToApply);
-        const durationStr = calculateDurationString_(startDate, dateToApply);
-        if (durationStr) orchidSheet.getRange(20 + idx, 3).setValue(durationStr);
-      });
-      
-      const lastOpenIdx = openRowIndices[openRowIndices.length - 1];
-      const nextRow = lastOpenIdx + 1;
-      if (nextRow < logData.length) {
-        orchidSheet.getRange(20 + nextRow, 1).setValue(dateToApply);
-      }
-    } else if (emptyRowIndex !== -1) {
+    // Check if the latest row is already logged for today to prevent duplicates
+    const lastRowIndex = emptyRowIndex > 0 ? emptyRowIndex - 1 : (logData.length - 1);
+    const existingDate = logData[lastRowIndex][0];
+    if (existingDate instanceof Date && existingDate.toDateString() === dateToApply.toDateString() && logData[lastRowIndex][1] === "") {
+      return; // Already logged today, do nothing
+    }
+
+    if (emptyRowIndex !== -1) {
       orchidSheet.getRange(20 + emptyRowIndex, 1).setValue(dateToApply);
     }
   } 
   else if (type === "end") {
-    // Close all open cycles
+    // Close all unclosed cycles
     if (openRowIndices.length > 0) {
       openRowIndices.forEach(idx => {
         const startDate = logData[idx][0] instanceof Date ? logData[idx][0] : new Date(logData[idx][0]);
