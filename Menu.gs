@@ -2,8 +2,8 @@
  * -----------------------------------------------------------------------------
  * ORCHID MANAGEMENT SYSTEM - CONSOLIDATED MENU (Menu.gs)
  * -----------------------------------------------------------------------------
- * Version: 6.0.0
- * Updated: 2026-08-01
+ * Version: 6.1.0
+ * Updated: 2026-08-08
  * Project: The Satyrion Chronicles / Orchid Tracker
  * CHANGE LOG:
  * - Sanitized all external URLs using ScriptProperties for GitHub security.
@@ -12,6 +12,7 @@
  * - Integrated Export to XLSX utility into System Formatting submenu.
  * - Added Date Standardization functions to System Formatting submenu.
  * - Integrated System Manual & README viewer launcher (showSystemReadmeModal).
+ * - Added searchAndNavigateSheetOrOrchid to query sheet names/numbers and cell B5.
  * -----------------------------------------------------------------------------
  */
 
@@ -117,6 +118,62 @@ function setActiveSheet(sheetName) {
     ss.setActiveSheet(sheet);
   } else {
     throw new Error('Sheet "' + sheetName + '" not found.');
+  }
+}
+
+/**
+ * Searches sheets by sheet name/number or by Orchid Name in cell B5.
+ * Navigates to the first matching sheet and returns its name, or throws an error.
+ * 
+ * @param {string} query - The search query (sheet number/name or orchid name).
+ * @return {string} The name of the activated sheet.
+ */
+function searchAndNavigateSheetOrOrchid(query) {
+  if (!query || typeof query !== 'string') {
+    throw new Error('Please enter a valid search term.');
+  }
+
+  const trimmedQuery = query.trim().toLowerCase();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+
+  let targetSheet = null;
+
+  // 1. First, check for exact or partial sheet name/number match
+  for (let i = 0; i < sheets.length; i++) {
+    const sheet = sheets[i];
+    const sheetName = sheet.getName().toLowerCase();
+    if (sheetName === trimmedQuery || sheetName.includes(trimmedQuery)) {
+      targetSheet = sheet;
+      break;
+    }
+  }
+
+  // 2. If no sheet name/number matches, check cell B5 across sheets (Orchid Name)
+  if (!targetSheet) {
+    for (let i = 0; i < sheets.length; i++) {
+      const sheet = sheets[i];
+      try {
+        if (sheet.getLastRow() >= 5) {
+          const b5Value = sheet.getRange("B5").getValue();
+          if (b5Value && typeof b5Value === 'string') {
+            if (b5Value.toLowerCase().includes(trimmedQuery)) {
+              targetSheet = sheet;
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not read B5 for sheet: ' + sheet.getName(), err);
+      }
+    }
+  }
+
+  if (targetSheet) {
+    ss.setActiveSheet(targetSheet);
+    return targetSheet.getName();
+  } else {
+    throw new Error('No matching sheet or orchid name found for: "' + query + '"');
   }
 }
 

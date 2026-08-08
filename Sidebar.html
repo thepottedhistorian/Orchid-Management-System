@@ -45,8 +45,8 @@
       <button class="keiki-btn" onclick="openKeiki()">🌱 Open Keiki Workbook</button>
       
       <div class="search-box">
-        <input type="text" id="sheetSearch" placeholder="Jump to Sheet #..." 
-               onkeydown="if(event.key === 'Enter') jumpToSheet()">
+        <input type="text" id="sheetSearch" placeholder="Search Sheet # or Orchid Name..." 
+                onkeydown="if(event.key === 'Enter') jumpToSheet()">
         <button class="go-btn" onclick="jumpToSheet()">GO</button>
       </div>
     </div>
@@ -64,26 +64,26 @@
     </div>
 
     <div class="footer">
-      <p>Orchid Management System v5.1<br>
+      <p>Orchid Management System v6.1<br>
       Archival Record | North Carolina</p>
     </div>
 
     <script>
-/**
- * Opens the Keiki Workbook in a new browser tab
- * Fetches the sanitized URL from the server first.
- */
-function openKeiki() {
-  google.script.run
-    .withSuccessHandler(function(url) {
-      if (url) {
-        window.open(url, "_blank");
-      } else {
-        alert("Keiki URL not configured.");
+      /**
+       * Opens the Keiki Workbook in a new browser tab
+       * Fetches the sanitized URL from the server first.
+       */
+      function openKeiki() {
+        google.script.run
+          .withSuccessHandler(function(url) {
+            if (url) {
+              window.open(url, "_blank");
+            } else {
+              alert("Keiki URL not configured.");
+            }
+          })
+          .getKeikiUrl();
       }
-    })
-    .getKeikiUrl();
-}
 
       /**
        * Primary navigation for named tabs
@@ -95,16 +95,18 @@ function openKeiki() {
       }
 
       /**
-       * Handles the search input for jumping to numerical sheet IDs
+       * Handles the search input for jumping to numerical sheet IDs or matching Orchid Names (cell B5)
        */
       function jumpToSheet() {
         var input = document.getElementById('sheetSearch');
-        var sheetNum = input.value.trim();
-        if (sheetNum) {
+        var query = input.value.trim();
+        if (query) {
           google.script.run
-            .withFailureHandler(() => alert("Sheet '" + sheetNum + "' not found. Ensure the ID is correct."))
-            .setActiveSheet(sheetNum);
-          input.value = ''; // Reset input field
+            .withFailureHandler((err) => alert(err.message || ("No match found for '" + query + "'.")))
+            .withSuccessHandler(() => {
+              input.value = ''; // Reset input field on successful navigation
+            })
+            .searchAndNavigateSheetOrOrchid(query);
         }
       }
 
