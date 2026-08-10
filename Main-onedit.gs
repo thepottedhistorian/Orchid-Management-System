@@ -68,8 +68,18 @@ function onEdit(e) {
           
           for (let j = 1; j < invData.length; j++) {
             if (invData[j][ID_COL] == orchidID) {
-              const freqRaw = invData[j][FREQ_COL]; 
-              const months = (typeof parseFrequencyToMonths === 'function') ? parseFrequencyToMonths(freqRaw) : 12;
+              const freqRaw = invData[j][FREQ_COL];
+              const parsedMonths = (typeof parseFrequencyToMonths === 'function')
+                ? parseFrequencyToMonths(freqRaw)
+                : null;
+
+              // A blank or nonnumeric interval must never be treated as zero
+              // months.  `Date#setMonth(month + null)` leaves the date on the
+              // repot day, which was the cause of same-day due dates.
+              // Use the application's established one-year fallback instead.
+              const months = (typeof parsedMonths === 'number' && parsedMonths > 0)
+                ? parsedMonths
+                : 12;
               const nextDate = new Date(repotDate);
               nextDate.setMonth(nextDate.getMonth() + months);
               

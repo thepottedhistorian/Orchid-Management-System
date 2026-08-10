@@ -7,7 +7,7 @@
  * Project: The Satyrion Chronicles / Orchid Tracker
  * CHANGE LOG:
  * - Sanitized all external URLs using ScriptProperties for GitHub security.
- * - Integrated automatic Sidebar launch on document open.
+ * - Keeps the navigation sidebar available from the menu without auto-launching it.
  * - Added visibility utilities for managing a large collection of ID sheets.
  * - Integrated Export to XLSX utility into System Formatting submenu.
  * - Added Date Standardization functions to System Formatting submenu.
@@ -17,33 +17,28 @@
  */
 
 /**
- * Standard trigger that builds the menu and launches the sidebar.
+ * Standard trigger that builds the Orchid Tools menu.
  */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
   ui.createMenu("🌸 Orchid Tools")
-    // Navigation & Layout
     .addItem("🧭 Open Navigation Sidebar", "showSidebar")
     .addItem("🌱 Open Keiki Workbook", "openKeikiWorkbookLink")
     .addSeparator()
 
-    // STAGE 1 & 2: Provisioning Workflow
     .addItem("✨ 1. Provision New Row", "provisionNewOrchid")
     .addItem("🔗 2. Finalize & Link Ledger", "finalizeNewOrchid")
     .addSeparator()
-    
-    // Archiving Section
+
     .addItem("📦 Archive Orchid", "archiveOrchid")
     .addItem("📦 Bulk Archive Orchids", "bulkArchiveOrchids")
     .addSeparator()
-    
-    // Govee Data Section
+
     .addItem("📊 Sync Govee Data (Gmail/Drive)", "importGoveeDaily")
     .addItem("🔄 Refresh Cabinet Tables", "generateCabinetTables")
     .addSeparator()
 
-    // Watering & Maintenance Log Tools
     .addSubMenu(
       ui.createMenu("🚿 Watering & Maintenance")
         .addItem("Log Bulk Watering (Selected Rows)", "showWateringModal")
@@ -54,22 +49,20 @@ function onOpen() {
     )
     .addSeparator()
 
-    // Repotting Tools Submenu
     .addSubMenu(
       ui.createMenu("📅 Repotting Tools")
         .addItem("Step 1: Sync Log Column H (from A38)", "transferA38ToLogColumnH")
         .addItem("Step 2: Calculate Next Due", "calculateOnlyMaintenanceLogG")
         .addItem("Step 3: Push Final Dates to ID Sheets", "pushInventoryTToOrchidD10")
         .addSeparator()
-        .addItem("👁️ Preview Repot Calculations", "previewRecalcRepotDates")
+        .addItem("👁️ Preview Repot Calculations", "showRepotPreviewModal")
     )
     .addSeparator()
 
-    // System Formatting Submenu
     .addSubMenu(
       ui.createMenu("🛠️ System Formatting")
         .addItem("Refresh All Bloom Icons", "refreshAllBloomStatusFormatting")
-        .addItem("Refresh All Stoplight Dates", "applyAllSystemStoplights") 
+        .addItem("Refresh All Stoplight Dates", "applyAllSystemStoplights")
         .addItem("Fix All Timestamps", "fixAllPhasesSequentially")
         .addSeparator()
         .addItem("📅 Standardize Dates (Selected Range)", "standardizeSelectedDates")
@@ -86,34 +79,26 @@ function onOpen() {
     .addItem("🏥 Run System Health Check", "runSystemHealthCheck")
     .addItem("📖 System Manual & README", "showSystemReadmeModal")
     .addToUi();
-
-  // Auto-launch the sidebar on workbook open
-  showSidebar();
 }
-
-/**
- * -----------------------------------------------------------------------------
- * NAVIGATION & SIDEBAR UTILITIES
- * -----------------------------------------------------------------------------
- */
 
 /**
  * Renders the Sidebar.html file to the UI.
  */
 function showSidebar() {
-  const html = HtmlService.createHtmlOutputFromFile('Sidebar')
-      .setTitle('Orchid Tracker Navigator')
-      .setWidth(300);
+  const html = HtmlService.createHtmlOutputFromFile("Sidebar")
+    .setTitle("Orchid Tracker Navigator")
+    .setWidth(300);
+
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
 /**
  * Facilitates direct navigation to a tab by name or ID.
- * Called by Sidebar.html
  */
 function setActiveSheet(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(sheetName);
+
   if (sheet) {
     ss.setActiveSheet(sheet);
   } else {
@@ -122,49 +107,50 @@ function setActiveSheet(sheetName) {
 }
 
 /**
- * Searches sheets by sheet name/number or by Orchid Name in cell B5.
- * Navigates to the first matching sheet and returns its name, or throws an error.
- * 
- * @param {string} query - The search query (sheet number/name or orchid name).
- * @return {string} The name of the activated sheet.
+ * Searches sheets by sheet name/number or Orchid Name in cell B5.
+ *
+ * @param {string} query Sheet number, name, or orchid name.
+ * @return {string} Activated sheet name.
  */
 function searchAndNavigateSheetOrOrchid(query) {
-  if (!query || typeof query !== 'string') {
-    throw new Error('Please enter a valid search term.');
+  if (!query || typeof query !== "string") {
+    throw new Error("Please enter a valid search term.");
   }
 
   const trimmedQuery = query.trim().toLowerCase();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets();
-
   let targetSheet = null;
 
-  // 1. First, check for exact or partial sheet name/number match
   for (let i = 0; i < sheets.length; i++) {
     const sheet = sheets[i];
     const sheetName = sheet.getName().toLowerCase();
+
     if (sheetName === trimmedQuery || sheetName.includes(trimmedQuery)) {
       targetSheet = sheet;
       break;
     }
   }
 
-  // 2. If no sheet name/number matches, check cell B5 across sheets (Orchid Name)
   if (!targetSheet) {
     for (let i = 0; i < sheets.length; i++) {
       const sheet = sheets[i];
+
       try {
         if (sheet.getLastRow() >= 5) {
           const b5Value = sheet.getRange("B5").getValue();
-          if (b5Value && typeof b5Value === 'string') {
-            if (b5Value.toLowerCase().includes(trimmedQuery)) {
-              targetSheet = sheet;
-              break;
-            }
+
+          if (
+            b5Value &&
+            typeof b5Value === "string" &&
+            b5Value.toLowerCase().includes(trimmedQuery)
+          ) {
+            targetSheet = sheet;
+            break;
           }
         }
       } catch (err) {
-        console.warn('Could not read B5 for sheet: ' + sheet.getName(), err);
+        console.warn("Could not read B5 for sheet: " + sheet.getName(), err);
       }
     }
   }
@@ -172,66 +158,64 @@ function searchAndNavigateSheetOrOrchid(query) {
   if (targetSheet) {
     ss.setActiveSheet(targetSheet);
     return targetSheet.getName();
-  } else {
-    throw new Error('No matching sheet or orchid name found for: "' + query + '"');
   }
+
+  throw new Error('No matching sheet or orchid name found for: "' + query + '"');
 }
 
 /**
- * Opens the Keiki Workbook Link (called from Menu)
- * Sanitized for GitHub using ScriptProperties.
+ * Opens the Keiki Workbook Link.
  */
 function openKeikiWorkbookLink() {
   const props = PropertiesService.getScriptProperties();
-  const url = props.getProperty('KEIKI_WORKBOOK_URL');
-  
+  const url = props.getProperty("KEIKI_WORKBOOK_URL");
+
   if (!url) {
-    SpreadsheetApp.getUi().alert("Error: Keiki Workbook URL not found in Script Properties. Please add it to Project Settings.");
+    SpreadsheetApp.getUi().alert(
+      "Error: Keiki Workbook URL not found in Script Properties. Please add it to Project Settings."
+    );
     return;
   }
 
   const html = HtmlService.createHtmlOutput(
     '<html><script>' +
-    'var win = window.open("' + url + '", "_blank");' +
-    'if(win){ google.script.host.close(); }' +
-    'else { alert("Pop-up blocked! Please allow pop-ups for this sheet."); }' +
-    '</script></html>'
-  ).setWidth(10).setHeight(10);
-  
+      'var win = window.open("' + url + '", "_blank");' +
+      'if(win){ google.script.host.close(); }' +
+      'else { alert("Pop-up blocked! Please allow pop-ups for this sheet."); }' +
+      "</script></html>"
+  )
+    .setWidth(10)
+    .setHeight(10);
+
   SpreadsheetApp.getUi().showModalDialog(html, "Opening Keiki Workbook...");
 }
 
 /**
- * Helper for Sidebar to get the sanitized URL.
+ * Returns the sanitized Keiki workbook URL for Sidebar.html.
  */
 function getKeikiUrl() {
-  return PropertiesService.getScriptProperties().getProperty('KEIKI_WORKBOOK_URL');
+  return PropertiesService.getScriptProperties().getProperty("KEIKI_WORKBOOK_URL");
 }
 
 /**
- * -----------------------------------------------------------------------------
- * VISIBILITY UTILITIES
- * -----------------------------------------------------------------------------
- */
-
-/**
- * Hides the currently focused sheet to keep the tab bar clean.
+ * Hides the currently focused sheet, unless it is the last visible sheet.
  */
 function hideActiveSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getActiveSheet();
-  
-  // Prevent hiding the last visible sheet
   const visibleSheets = ss.getSheets().filter(s => !s.isSheetHidden());
+
   if (visibleSheets.length > 1) {
     sheet.hideSheet();
   } else {
-    SpreadsheetApp.getUi().alert("Digital Steward Alert: Cannot hide the only visible sheet.");
+    SpreadsheetApp.getUi().alert(
+      "Digital Steward Alert: Cannot hide the only visible sheet."
+    );
   }
 }
 
 /**
- * Reveals all previously hidden sheets (ID ledgers) in the workbook.
+ * Reveals all previously hidden sheets.
  */
 function showAllHiddenSheets() {
   const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
@@ -239,17 +223,15 @@ function showAllHiddenSheets() {
 }
 
 /**
- * -----------------------------------------------------------------------------
- * DOCUMENTATION & MANUAL UTILITIES
- * -----------------------------------------------------------------------------
- */
-
-/**
- * Launches the System README & Documentation Viewer modal (HelpFile.html).
+ * Launches the System README and documentation viewer.
  */
 function showSystemReadmeModal() {
-  const html = HtmlService.createHtmlOutputFromFile('HelpFile')
+  const html = HtmlService.createHtmlOutputFromFile("HelpFile")
     .setWidth(950)
     .setHeight(750);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Orchid Management System - Documentation & Manual');
+
+  SpreadsheetApp.getUi().showModalDialog(
+    html,
+    "Orchid Management System - Documentation & Manual"
+  );
 }

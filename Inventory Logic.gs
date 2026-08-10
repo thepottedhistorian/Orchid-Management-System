@@ -147,7 +147,7 @@ function runSystemHealthCheck() {
       log.push(`ID ${id}: Sheet is hidden but orchid is active`);
     }
 
-    const freqRaw = data[i][20]; 
+    const freqRaw = data[i][FREQ_COL];
     if (freqRaw && !parseFrequencyToMonths(freqRaw)) {
       log.push(`ID ${id}: Invalid frequency format "${freqRaw}"`);
     }
@@ -159,18 +159,4 @@ function runSystemHealthCheck() {
   } else {
     ui.alert("⚠️ Issues Found:\n\n" + log.join("\n"));
   }
-}
-
-/**
- * 🛠️ HELPER: Parses string frequency into a numeric month value.
- */
-function parseFrequencyToMonths(input) {
-  if (!input) return null;
-  const s = input.toString().toLowerCase();
-  const match = s.match(/\d+/);
-  if (!match) return null;
-  const val = parseInt(match[0]);
-  if (s.includes("year")) return val * 12;
-  if (s.includes("month")) return val;
-  return null;
 }

@@ -6,17 +6,99 @@
  * 1. Base date selection (Last Repot Date from Log/A38 over Acquisition Date).
  * 2. Repot frequency calculation using the UPPER END (e.g., 1-2 years = 2 years).
  * 3. Triple-sync to Inventory [Col U], Maintenance Log [Col G], and ID Sheet [D10].
+ * 4. HTML Preview Modal Data Generation (previewRecalcRepotDates).
  * -----------------------------------------------------------------------------
  */
 
 /**
- * 🔄 MASTER RUNNER: Recalculates and synchronizes all repot dates collection-wide.
+ * Helper to reliably get active spreadsheet reference
+ */
+function getTargetSpreadsheet_() {
+  if (typeof MASTER_ID !== 'undefined' && MASTER_ID) {
+    try {
+      return SpreadsheetApp.openById(MASTER_ID);
+    } catch (e) {
+      console.warn("Could not open by MASTER_ID, falling back to Active Spreadsheet.");
+    }
+  }
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+/**
+ * 🖥️ UI LAUNCHER: Opens the Repot Date Preview Modal.
+ */
+function showRepotPreviewModal() {
+  const htmlTemplate = HtmlService.createTemplateFromFile('repot-preview');
+  htmlTemplate.previewData = previewRecalcRepotDates();
+  
+  const html = htmlTemplate.evaluate()
+    .setWidth(900)
+    .setHeight(650);
+    
+  SpreadsheetApp.getUi().showModalDialog(html, 'Repot Date Preview');
+}
+
+/**
+ * 📊 PREVIEW DATA GENERATOR
+ */
+function previewRecalcRepotDates() {
+  const ss = getTargetSpreadsheet_();
+  const inv = ss.getSheetByName(INVENTORY_SHEET);
+  if (!inv) throw new Error("Inventory sheet '" + INVENTORY_SHEET + "' not found.");
+
+  const invData = inv.getDataRange().getValues();
+  const previewData = [];
+
+  for (let i = 1; i < invData.length; i++) {
+    const rowNum = i + 1;
+    const id = invData[i][ID_COL]; 
+    if (!id || id.toString().trim() === "" || isNaN(id)) continue;
+
+    const plantName = invData[i][NAME_COL] || "Unknown Orchid";
+    const acqRaw = invData[i][ACQ_COL];
+    const freqRaw = invData[i][FREQ_COL];
+    const freqMonths = parseFrequencyToMonths(freqRaw) || 12;
+
+    const lastRepot = getLastRepotDateForID(id);
+    let acqDate = null;
+    if (acqRaw instanceof Date && !isNaN(acqRaw.getTime())) {
+      acqDate = acqRaw;
+    } else if (acqRaw) {
+      const parsed = new Date(acqRaw);
+      if (!isNaN(parsed.getTime())) acqDate = parsed;
+    }
+    
+    let baseDate = lastRepot || acqDate;
+    let baseUsed = lastRepot ? "Last Repot" : (acqDate ? "Acquisition" : "None");
+
+    const nextDate = calculateNextRepotDate_(acqDate, lastRepot, freqMonths);
+    const status = nextDate ? "OK" : "MISSING BASE DATE";
+
+    previewData.push({
+      row: rowNum,
+      id: id,
+      name: plantName,
+      acquisition: acqDate ? Utilities.formatDate(acqDate, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd") : "N/A",
+      lastRepot: lastRepot ? Utilities.formatDate(lastRepot, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd") : "None",
+      baseUsed: baseUsed,
+      frequency: freqRaw || "1 Year",
+      months: freqMonths,
+      next: nextDate ? Utilities.formatDate(nextDate, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd") : "N/A",
+      status: status
+    });
+  }
+
+  return previewData;
+}
+
+/**
+ * 🔄 MASTER RUNNER: Recalculates and synchronizes all repot dates.
  */
 function recalcAllPlantRepotDueDates() {
-  const ss = SpreadsheetApp.openById(MASTER_ID);
+  const ss = getTargetSpreadsheet_();
   const inv = ss.getSheetByName(INVENTORY_SHEET);
   const log = ss.getSheetByName(MAINT_LOG_SHEET);
-  if (!inv) return;
+  if (!inv) throw new Error("Inventory sheet '" + INVENTORY_SHEET + "' not found.");
 
   const invData = inv.getDataRange().getValues();
   let updatedCount = 0;
@@ -25,15 +107,19 @@ function recalcAllPlantRepotDueDates() {
     const id = invData[i][ID_COL]; 
     if (!id || id.toString().trim() === "" || isNaN(id)) continue;
 
-    const acqRaw = invData[i][ACQ_COL];             // Column I (Acquisition)
-    const freqRaw = invData[i][FREQ_COL];           // Column T (Frequency)
-    const freqMonths = parseFrequencyToMonths(freqRaw); // Takes upper range number
+    const acqRaw = invData[i][ACQ_COL];
+    const freqRaw = invData[i][FREQ_COL];
+    const freqMonths = parseFrequencyToMonths(freqRaw) || 12;
 
-    // 1. Determine base date: Last Repot Date takes priority over Acquisition Date
     const lastRepot = getLastRepotDateForID(id);
-    const acqDate = (acqRaw instanceof Date) ? acqRaw : new Date(acqRaw);
+    let acqDate = null;
+    if (acqRaw instanceof Date && !isNaN(acqRaw.getTime())) {
+      acqDate = acqRaw;
+    } else if (acqRaw) {
+      const parsed = new Date(acqRaw);
+      if (!isNaN(parsed.getTime())) acqDate = parsed;
+    }
     
-    // 2. Calculate next repot due date
     const nextDate = calculateNextRepotDate_(acqDate, lastRepot, freqMonths);
 
     if (nextDate) {
@@ -45,7 +131,7 @@ function recalcAllPlantRepotDueDates() {
         const logVals = log.getDataRange().getValues();
         for (let r = logVals.length - 1; r >= 1; r--) {
           if (logVals[r][0] == id) {
-            log.getRange(r + 1, 7).setValue(nextDate); // Column G
+            log.getRange(r + 1, 7).setValue(nextDate);
             break; 
           }
         }
@@ -65,55 +151,15 @@ function recalcAllPlantRepotDueDates() {
     }
   }
 
-  try {
-    SpreadsheetApp.getUi().alert(`Success: Recalculated repot dates for ${updatedCount} orchids across Inventory [U], Maintenance Log [G], and ID Sheets [D10].`);
-  } catch (e) {
-    console.log(`Recalculation Complete: ${updatedCount} records updated.`);
-  }
-}
-
-/**
- * STEP 1 FUNCTION: Syncs A38 from ID sheets into Maintenance Log Column H.
- */
-function transferA38ToLogColumnH() {
-  const ss = SpreadsheetApp.openById(MASTER_ID);
-  const log = ss.getSheetByName(MAINT_LOG_SHEET);
-  if (!log) return;
-
-  const logData = log.getDataRange().getValues();
-  let updatedCount = 0;
-
-  for (let i = 1; i < logData.length; i++) {
-    const id = logData[i][0];
-    if (!id || isNaN(id)) continue;
-
-    const lastRepot = getLastRepotDateForID(id);
-    if (lastRepot instanceof Date && !isNaN(lastRepot.getTime())) {
-      log.getRange(i + 1, 8).setValue(lastRepot); // Column H (Index 8)
-      updatedCount++;
-    }
-  }
-
-  try {
-    SpreadsheetApp.getUi().alert(`Step 1 Complete: Transferred last repot dates to Column H for ${updatedCount} orchids.`);
-  } catch (e) {
-    console.log(`Step 1 Complete: Transferred dates for ${updatedCount} orchids.`);
-  }
-}
-
-/**
- * STEP 2 FUNCTION: Recalculates Maintenance Log Column G.
- */
-function calculateOnlyMaintenanceLogG() {
-  recalcAllPlantRepotDueDates(); // Invokes full calculation loop
+  console.log(`Recalculation Complete: ${updatedCount} records updated.`);
+  return updatedCount;
 }
 
 /**
  * 🔍 HELPER: GET LAST REPOT DATE FOR ID
- * Checks individual sheet A38:A55 first, falls back to Maintenance Log Column H.
  */
 function getLastRepotDateForID(id) {
-  const ss = SpreadsheetApp.openById(MASTER_ID);
+  const ss = getTargetSpreadsheet_();
   let latest = null;
 
   // 1. Check Individual Orchid Sheet (A38:A55)
@@ -122,8 +168,11 @@ function getLastRepotDateForID(id) {
     const sheetData = orchidSheet.getRange("A38:A55").getValues();
     for (let j = 0; j < sheetData.length; j++) {
       let d = sheetData[j][0];
-      if (d && d instanceof Date && !isNaN(d.getTime())) {
-        if (!latest || d > latest) latest = d;
+      if (d) {
+        if (!(d instanceof Date)) d = new Date(d);
+        if (!isNaN(d.getTime())) {
+          if (!latest || d > latest) latest = d;
+        }
       }
     }
   }
@@ -149,22 +198,25 @@ function getLastRepotDateForID(id) {
 
 /**
  * 🧮 INTERNAL MATH: CALCULATE NEXT REPOT DATE
- * Uses Last Repot Date if present; otherwise defaults to Acquisition Date.
  */
 function calculateNextRepotDate_(acqDate, lastRepotDate, freqMonths) {
-  const base = lastRepotDate ? new Date(lastRepotDate) : new Date(acqDate);
-  if (isNaN(base.getTime()) || !freqMonths) return null;
+  let base = null;
+  
+  if (lastRepotDate && lastRepotDate instanceof Date && !isNaN(lastRepotDate.getTime())) {
+    base = new Date(lastRepotDate);
+  } else if (acqDate && acqDate instanceof Date && !isNaN(acqDate.getTime())) {
+    base = new Date(acqDate);
+  }
+
+  if (!base || isNaN(base.getTime()) || !freqMonths) return null;
+  
   const next = new Date(base);
   next.setMonth(next.getMonth() + freqMonths);
   return next;
 }
 
 /**
- * 🛠️ UTILITY: PARSE FREQUENCY TO MONTHS (UPPER RANGE HIGHEST NUMBER)
- * Extracts the HIGHEST number found in a string:
- * - "1-2 years"  -> 2 years  -> 24 months
- * - "12-18 months" -> 18 months -> 18 months
- * - "1 year"     -> 1 year   -> 12 months
+ * 🛠️ UTILITY: PARSE FREQUENCY TO MONTHS
  */
 function parseFrequencyToMonths(freqRaw) {
   if (!freqRaw) return null;
@@ -173,8 +225,47 @@ function parseFrequencyToMonths(freqRaw) {
   const matches = text.match(/(\d+(\.\d+)?)/g);
   if (!matches) return null;
   
-  // Takes the last (highest) number matched in the range expression
   const num = parseFloat(matches[matches.length - 1]);
-  
   return text.includes("year") ? num * 12 : num;
+}
+
+
+/**
+ * 🧪 DIAGNOSTIC TOOL: Run this directly from the Apps Script Editor toolbar.
+ * Inspects row 67 (ID 66) and prints findings to the Execution Log below.
+ */
+function debugRow67() {
+  const ss = getTargetSpreadsheet_();
+  const inv = ss.getSheetByName(INVENTORY_SHEET);
+  const invData = inv.getDataRange().getValues();
+  
+  const rowIndex = 66; // Row 67 in Google Sheets (0-indexed array)
+  
+  if (invData.length <= rowIndex) {
+    console.log("❌ Row 67 was not found in the Inventory range!");
+    return;
+  }
+  
+  const rowData = invData[rowIndex];
+  const id = rowData[ID_COL];
+  const name = rowData[NAME_COL];
+  const acqRaw = rowData[ACQ_COL];
+  const freqRaw = rowData[FREQ_COL];
+  
+  console.log("=== ROW 67 DIAGNOSTIC RESULTS ===");
+  console.log("ID Read:", id);
+  console.log("Plant Name:", name);
+  console.log("Acquisition Raw Value:", acqRaw, "| Is Date Object?:", acqRaw instanceof Date);
+  console.log("Frequency Raw Value:", freqRaw);
+  
+  const lastRepot = getLastRepotDateForID(id);
+  console.log("Last Repot Date Found (from Sheet 66 / Log):", lastRepot);
+  
+  const freqMonths = parseFrequencyToMonths(freqRaw);
+  console.log("Parsed Frequency (in Months):", freqMonths);
+  
+  let acqDate = (acqRaw instanceof Date && !isNaN(acqRaw.getTime())) ? acqRaw : (acqRaw ? new Date(acqRaw) : null);
+  const nextDate = calculateNextRepotDate_(acqDate, lastRepot, freqMonths || 12);
+  
+  console.log("Calculated Next Repot Due Date:", nextDate);
 }

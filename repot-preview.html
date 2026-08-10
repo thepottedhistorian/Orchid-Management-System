@@ -81,18 +81,23 @@
       <button class="btn-cancel" onclick="google.script.host.close()">Cancel</button>
     </div>
 
-    <script>
-      function applyChanges() {
-        // Disables button to prevent double-clicks during write-back
-        const btn = document.querySelector('.btn-apply');
-        btn.innerHTML = 'Updating Collection...';
-        btn.disabled = true;
+<script>
+  function applyChanges() {
+    const btn = document.querySelector('.btn-apply');
+    btn.innerHTML = 'Updating Collection...';
+    btn.disabled = true;
 
-        // Calls the main sync function in batch-tools.gs
-        google.script.run
-          .withSuccessHandler(() => google.script.host.close())
-          .recalcAllPlantRepotDueDates();
-      }
-    </script>
+    google.script.run
+      .withSuccessHandler(() => {
+        google.script.host.close();
+      })
+      .withFailureHandler((err) => {
+        alert("Execution Error: " + err.message);
+        btn.innerHTML = 'Apply Changes';
+        btn.disabled = false;
+      })
+      .recalcAllPlantRepotDueDates();
+  }
+</script>
   </body>
 </html>
